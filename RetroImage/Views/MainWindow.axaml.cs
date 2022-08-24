@@ -27,7 +27,21 @@ namespace RetroImage.Views
             if (e.Data.Contains(DataFormats.FileNames))
             {
                 ViewModel.CurrentImageName = Path.GetFileName(e.Data.GetFileNames().First());
-                ViewModel.CurrentImage = DegasService.ReadDegasImage(e.Data.GetFileNames().First());
+
+                switch(Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
+                {
+                    case ".NEO":
+                        ViewModel.CurrentImage = NEOchromeService.ReadNEOImage(e.Data.GetFileNames().First());
+                        break;
+                    case ".PI1":
+                    case ".PI2":
+                    case ".PI3":
+                    case ".PC1":
+                    case ".PC2":
+                    case ".PC3":
+                        ViewModel.CurrentImage = DegasService.ReadDegasImage(e.Data.GetFileNames().First());
+                        break;
+                }
             }
         }
     }

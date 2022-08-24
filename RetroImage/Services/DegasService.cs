@@ -83,7 +83,7 @@ namespace Z80andrew.RetroImage.Services
                 if (isCompressed)
                 {
                     var uncompressedImage = Compression.DecompressPackBits(imageBytes);
-                    imageBytes = Compression.InterleavePlanes(uncompressedImage, width, (byte)bitPlanes);
+                    imageBytes = Compression.InterleavePlanes(uncompressedImage, width, bitPlanes);
                 }
 
                 int x = 0;

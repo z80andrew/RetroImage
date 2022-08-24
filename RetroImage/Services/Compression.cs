@@ -50,7 +50,7 @@ namespace Z80andrew.RetroImage.Services
             return data;
         }
 
-        public static byte[] InterleavePlanes(byte[] sequentialPlaneData, int width, byte numPlanes)
+        public static byte[] InterleavePlanes(byte[] sequentialPlaneData, int width, int numPlanes)
         {
             byte[] screenMemoryData = new byte[sequentialPlaneData.Length];
             int sourceIndex = 0;

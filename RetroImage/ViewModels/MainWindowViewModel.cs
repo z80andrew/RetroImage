@@ -13,9 +13,7 @@ namespace RetroImage.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
-        //public string ImagePath => @"D:\Temp\DEGAS\UNCOMPRESSED\\MED\\TEST.PI2";
-        public string ImagePath => @"D:\Temp\DEGAS\COMPRESSED\\MED\\STEALTHD.PC2";
-        //public string ImagePath => @"D:\Temp\DEGAS\\MAGICMTN.PC1";
+        public string ImagePath => "./Assets/Images/SONIC.PI1";
 
         private string _currentImageName;
         public string CurrentImageName
