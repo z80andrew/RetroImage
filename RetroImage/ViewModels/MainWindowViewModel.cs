@@ -12,16 +12,45 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using Z80andrew.RetroImage.Interfaces;
 using SixLabors.ImageSharp.Processing;
+using Avalonia;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace RetroImage.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
-        public string ImagePath => "./Assets/Images/MAGICMTN.PC1";
+        public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
         public DegasService degasService;
         private IAtariImage atariImage;
 
-        private Animation[] _animations;
+        private bool _isAnimationLayer1Visible;
+        public bool IsAnimationLayer1Visible
+        {
+            get => _isAnimationLayer1Visible;
+            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer1Visible, value);
+        }
+
+        private bool _isAnimationLayer2Visible;
+        public bool IsAnimationLayer2Visible
+        {
+            get => _isAnimationLayer2Visible;
+            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer2Visible, value);
+        }
+
+        private bool _isAnimationLayer3Visible;
+        public bool IsAnimationLayer3Visible
+        {
+            get => _isAnimationLayer3Visible;
+            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer3Visible, value);
+        }
+
+        private bool _isAnimationLayer4Visible;
+        public bool IsAnimationLayer4Visible
+        {
+            get => _isAnimationLayer1Visible;
+            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer4Visible, value);
+        }
 
         private bool _animate;
         public bool Animate
@@ -37,22 +66,53 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _currentImageName, value);
         }
 
-        private IBitmap _currentImage;
-        public IBitmap CurrentImage
+        private IBitmap _baseImage;
+        public IBitmap BaseImage
         {
-            get => _currentImage;
-            set => this.RaiseAndSetIfChanged(ref _currentImage, value);
+            get => _baseImage;
+            set => this.RaiseAndSetIfChanged(ref _baseImage, value);
+        }
+
+        private IBitmap _animationLayer1Image;
+        public IBitmap AnimationLayer1Image
+        {
+            get => _animationLayer1Image;
+            set => this.RaiseAndSetIfChanged(ref _animationLayer1Image, value);
+        }
+
+        private IBitmap _animationLayer2Image;
+        public IBitmap AnimationLayer2Image
+        {
+            get => _animationLayer2Image;
+            set => this.RaiseAndSetIfChanged(ref _animationLayer2Image, value);
+        }
+
+        private IBitmap _animationLayer3Image;
+        public IBitmap AnimationLayer3Image
+        {
+            get => _animationLayer3Image;
+            set => this.RaiseAndSetIfChanged(ref _animationLayer3Image, value);
+        }
+
+        private IBitmap _animationLayer41mage;
+        public IBitmap AnimationLayer4Image
+        {
+            get => _animationLayer41mage;
+            set => this.RaiseAndSetIfChanged(ref _animationLayer41mage, value);
         }
 
         public MainWindowViewModel()
         {
             degasService = new DegasService();
-
-            atariImage = degasService.GetImage(ImagePath);
-            CurrentImageName = Path.GetFileName(ImagePath);
-            CurrentImage = ConvertImageToBitmap(atariImage.Image);
-
+            InitImage(degasService, ImagePath);
             Animate = true;
+        }
+
+        public void InitImage(IAtariImageService imageService, string imagePath)
+        {
+            atariImage = imageService.GetImage(imagePath);
+            CurrentImageName = Path.GetFileName(imagePath);
+            BaseImage = ConvertImageToBitmap(atariImage.Image);
             InitAnimations(atariImage.Animations);
         }
 
@@ -62,7 +122,8 @@ namespace RetroImage.ViewModels
 
             using (var imageStream = new MemoryStream())
             {
-                inputImage.Save(imageStream, PngFormat.Instance);
+                var imageFormat = PngFormat.Instance;
+                inputImage.Save(imageStream, imageFormat);
                 imageStream.Position = 0;
                 outputBitmap = new Bitmap(imageStream);
             }
@@ -72,8 +133,10 @@ namespace RetroImage.ViewModels
 
         private void InitAnimations(Animation[] animations)
         {
-            foreach (var animation in animations)
+            foreach(var animation in animations)
             {
+                Debug.WriteLine($"Setting up animation {animation.AnimationLayer}");
+
                 if (animation.Direction != AnimationDirection.None)
                 {
                     var animationTimer = new Timer()
@@ -83,23 +146,38 @@ namespace RetroImage.ViewModels
                     };
 
                     animationTimer.Elapsed += (sender, e) => AnimationTimer_Elapsed(sender, e, animation);
-
                     animationTimer.Start();
                 }
             }
+
+            IsAnimationLayer1Visible = animations.Length > 0 ? true : false;
+            IsAnimationLayer2Visible = animations.Length > 1 ? true : false;
+            IsAnimationLayer3Visible = animations.Length > 2 ? true : false;
+            IsAnimationLayer4Visible = animations.Length > 3 ? true : false;
         }
 
         private void AnimationTimer_Elapsed(object? sender, ElapsedEventArgs e, Animation animation)
         {
-            // take the 2 source images and draw them onto the image
-            atariImage.Image.Mutate(o => o
-                .DrawImage(atariImage.Image, new Point(0, 0), 1f) // draw the first one top left
-                .DrawImage(animation.Frames[animation.FrameIndex], new Point(0, 0), 1f) // draw the second next to it
-            );
+            Debug.Write($"Animation {animation.AnimationLayer}");
+            var imageBitmap = ConvertImageToBitmap(animation.Frames[animation.FrameIndex]);
+
+            switch (animation.AnimationLayer)
+            {
+                case 0:
+                    AnimationLayer1Image = imageBitmap;
+                    break;
+                case 1:
+                    AnimationLayer2Image = imageBitmap;
+                    break;
+                case 2:
+                    AnimationLayer3Image = imageBitmap;
+                    break;
+                case 3:
+                    AnimationLayer4Image = imageBitmap;
+                    break;
+            }
             
             animation.AdvanceFrame();
-
-            CurrentImage = ConvertImageToBitmap(atariImage.Image);
         }
     }
 }

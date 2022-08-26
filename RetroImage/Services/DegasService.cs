@@ -85,7 +85,7 @@ namespace Z80andrew.RetroImage.Services
             int yIncrement = resolution == Resolution.MED ? 2 : 1;
             var outputHeight = resolution == Resolution.MED ? height * 2 : height;
 
-            var degasImage = new Image<Rgba32>(width, outputHeight, Color.HotPink);
+            var degasImage = new Image<Rgba32>(width, outputHeight, RGBA_TRANSPARENT);
 
             while (y < outputHeight)
             {
@@ -198,7 +198,7 @@ namespace Z80andrew.RetroImage.Services
 
                 if (animationDirection != AnimationDirection.None)
                 {
-                    animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex)
+                    animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex, animationIndex)
                     {
                         Direction = animationDirection,
                         Delay = (float)(1 * 1000 / 60) * (128 - animationDelay)

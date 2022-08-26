@@ -11,16 +11,18 @@ namespace Z80andrew.RetroImage.Models
 {
     public class Animation
     {
+        public int AnimationLayer { get; set; }
         public AnimationDirection Direction { get; set; }
         public float Delay { get; set; }
         public int FrameIndex { get; set; }
         private int NumFrames { get; set; }
         public Image<Rgba32>[] Frames;
 
-        public Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
+        public Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
         {
             NumFrames = upperPaletteIndex - lowerPaletteIndex;
             Frames = GenerateFrames(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex);
+            AnimationLayer = animationLayer;
         }
 
         private Image<Rgba32>[] GenerateFrames(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
@@ -32,15 +34,19 @@ namespace Z80andrew.RetroImage.Models
             var frames = new Image<Rgba32>[numFrames];
 
             var currentPalette = palette;
-            
+
+            var baseImage = degasService.GetImageFromRawData(
+                width,
+                height,
+                resolution,
+                numBitPlanes,
+                palette,
+                imageBody
+                );
+
             for (int i = 0; i < numFrames; i++)
             {
                 var newPalette = new Color[palette.Length];
-
-                for (int c = 0; c < newPalette.Length; c++)
-                {
-                    newPalette[c] = currentPalette[c];
-                }
 
                 newPalette[lowerPaletteIndex] = currentPalette[upperPaletteIndex];
 
@@ -65,14 +71,12 @@ namespace Z80andrew.RetroImage.Models
 
             for (int i = 0; i < numFrames; i++)
             {
-                int frameToCompare = i == (numFrames-1) ? 0 : i+1;
-
                 for (int y = 0; y < frames[i].Height; y++)
                 {
                     for (int x = 0; x < frames[i].Width; x++)
                     {
-                        if (frames[i][x, y] == frames[frameToCompare][x, y]) animationFrames[i][x, y] = new Rgba32(0, 0, 0, 0);
-                        else animationFrames[i][x, y] = frames[frameToCompare][x, y];
+                        if (frames[i][x, y] == baseImage[x, y]) animationFrames[i][x, y] = RGBA_TRANSPARENT;
+                        else animationFrames[i][x, y] = frames[i][x, y];
                     }
                 }
             }

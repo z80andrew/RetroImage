@@ -18,7 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\Images\MAGICMTN.PC1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\Images\SONIC.PI1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

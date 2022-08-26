@@ -3,7 +3,11 @@
         xmlns:vm="using:RetroImage.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" 
+		d:DesignWidth="640" 
+		d:DesignHeight="400"
+		Width="640"
+		Height="430"
         x:Class="RetroImage.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="RetroImage">
@@ -12,9 +16,15 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-	<DockPanel Name="MainDockPanel" LastChildFill="True" DragDrop.AllowDrop="True">
+	<DockPanel Name="MainDockPanel" LastChildFill="True" DragDrop.AllowDrop="True">		
 		<TextBlock DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Image DockPanel.Dock="Top" Source="{Binding CurrentImage}" Margin="20"/>
+		<Panel DockPanel.Dock="Top">
+			<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding BaseImage}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer1Visible}" ZIndex="10" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer2Visible}" ZIndex="20" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer3Visible}" ZIndex="30" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer4Visible}" ZIndex="40" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}" Margin="20"/>
+		</Panel>
 	</DockPanel>
 
 </Window>
