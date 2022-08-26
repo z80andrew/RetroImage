@@ -9,13 +9,17 @@
     <RootNamespace>Z80andrew.RetroImage</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Remove="Assets\Images\MAGICMTN.PC1" />
     <AvaloniaResource Remove="Assets\Images\SONIC.PI1" />
     <None Remove=".gitignore" />
+    <None Remove="Assets\Images\MAGICMTN.PC1" />
     <None Remove="Assets\Images\SONIC.PI1" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\Images\MAGICMTN.PC1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\Images\SONIC.PI1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

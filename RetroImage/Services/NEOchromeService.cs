@@ -20,17 +20,16 @@ namespace Z80andrew.RetroImage.Services
         private const byte RES_MED = 1;
         private const byte RES_HIGH = 2;
 
-        public static IBitmap ReadNEOImage(string path)
+        public static Image<Rgba32> ReadNEOImage(string path)
         {
             bool isCompressed = false;
             int width = 320;
             int height = 200;
             int bitPlanes = 4;
-            IBitmap returnImage;
 
             using (FileStream imageFileStream = File.OpenRead(path))
             {
-                using Image<Rgb24> gif = new(width, height, Color.HotPink);
+                var neoImage = new Image<Rgba32>(width, height, Color.HotPink);
 
                 List<Color> colors = new List<Color>();
 
@@ -84,7 +83,7 @@ namespace Z80andrew.RetroImage.Services
                                     | ((imageBytes[arrayIndex + byteIndex + 4] & bitMask) / bitMask) << 2
                                     | ((imageBytes[arrayIndex + byteIndex + 6] & bitMask) / bitMask) << 3);
 
-                                gif[x, y] = colors[pixelByte];
+                                neoImage[x, y] = colors[pixelByte];
                                 x++;
 
                             }
@@ -98,15 +97,8 @@ namespace Z80andrew.RetroImage.Services
                     y++;
                 }
 
-                using (var imageStream = new MemoryStream())
-                {
-                    gif.Save(imageStream, PngFormat.Instance);
-                    imageStream.Position = 0;
-                    returnImage = new Bitmap(imageStream);
-                }
+                return neoImage;
             }
-
-            return returnImage;
         }
     }
 }

@@ -12,9 +12,12 @@ namespace RetroImage.Views
 {
     public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
     {
+        DegasService degasService;
         public MainWindow()
         {
             InitializeComponent();
+
+            degasService = new DegasService();
 
             var logScrollViewer = this.FindControl<DockPanel>("MainDockPanel");
 
@@ -31,7 +34,7 @@ namespace RetroImage.Views
                 switch(Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
                 {
                     case ".NEO":
-                        ViewModel.CurrentImage = NEOchromeService.ReadNEOImage(e.Data.GetFileNames().First());
+                        ViewModel.CurrentImage = ViewModel.ConvertImageToBitmap(NEOchromeService.ReadNEOImage(e.Data.GetFileNames().First()));
                         break;
                     case ".PI1":
                     case ".PI2":
@@ -39,7 +42,7 @@ namespace RetroImage.Views
                     case ".PC1":
                     case ".PC2":
                     case ".PC3":
-                        ViewModel.CurrentImage = DegasService.ReadDegasImage(e.Data.GetFileNames().First());
+                        ViewModel.CurrentImage = ViewModel.ConvertImageToBitmap(degasService.GetImage(e.Data.GetFileNames().First()).Image);
                         break;
                 }
             }
