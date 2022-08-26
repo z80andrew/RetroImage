@@ -34,7 +34,7 @@ namespace RetroImage.Views
                 switch(Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
                 {
                     case ".NEO":
-                        ViewModel.BaseImage = ViewModel.ConvertImageToBitmap(NEOchromeService.ReadNEOImage(e.Data.GetFileNames().First()));
+                        ViewModel.InitImage(new NEOchromeService(), e.Data.GetFileNames().First());
                         break;
                     case ".PI1":
                     case ".PI2":
@@ -42,7 +42,7 @@ namespace RetroImage.Views
                     case ".PC1":
                     case ".PC2":
                     case ".PC3":
-                        ViewModel.BaseImage = ViewModel.ConvertImageToBitmap(degasService.GetImage(e.Data.GetFileNames().First()).Image);
+                        ViewModel.InitImage(new DegasService(), e.Data.GetFileNames().First());
                         break;
                 }
             }

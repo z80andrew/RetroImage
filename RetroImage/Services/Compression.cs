@@ -5,7 +5,7 @@ namespace Z80andrew.RetroImage.Services
 {
     internal class Compression
     {
-        public static byte[] DecompressPackBits(byte[] imageBytes)
+        public static (int, byte[]) DecompressPackBits(byte[] imageBytes)
         {
             byte[] data = new byte[Constants.SCREEN_MEMORY_BYTES];
             int sourceIndex = 0;
@@ -47,7 +47,7 @@ namespace Z80andrew.RetroImage.Services
                 }
             }
 
-            return data;
+            return (sourceIndex, data);
         }
 
         public static byte[] InterleavePlanes(byte[] sequentialPlaneData, int width, int numPlanes)

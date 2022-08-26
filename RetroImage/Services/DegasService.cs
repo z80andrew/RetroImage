@@ -11,12 +11,20 @@ namespace Z80andrew.RetroImage.Services
 {
     public class DegasService : IAtariImageService
     {
-        private const byte PALETTE_OFFSET = 0x02;
-        private const byte BODY_OFFSET = 0x22;
-        private const byte MAX_ANIMATIONS = 0x04;
+        protected byte PALETTE_OFFSET;
+        protected byte BODY_OFFSET;
+        protected byte MAX_ANIMATIONS;
 
         public DegasService()
         {
+            Init();
+        }
+
+        protected virtual void Init()
+        {
+            PALETTE_OFFSET = 0x02;
+            BODY_OFFSET = 0x22;
+            MAX_ANIMATIONS = 0x04;
         }
 
         public IAtariImage GetImage(string path)
@@ -54,10 +62,16 @@ namespace Z80andrew.RetroImage.Services
                         break;
                 }
 
-                var imageBody = GetDegasImageBody(imageFileStream, isCompressed, width, height, bitPlanes);                
+                (var fileBodyByteCount, var imageBody) = GetDegasImageBody(imageFileStream, isCompressed, width, height, bitPlanes);                
                 var palette = GetDegasPalette(imageFileStream, bitPlanes);
                 var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
-                var animations = GetAnimations(imageFileStream, imageBody, width, height, resolution, bitPlanes, palette);
+
+                var animations = new Animation[0];
+
+                if (ImageHasAnimationData(imageFileStream, fileBodyByteCount))
+                {
+                    animations = GetAnimations(imageFileStream, imageBody, width, height, resolution, bitPlanes, palette);
+                }
 
                 atariImage = new DegasImageModel()
                 {
@@ -74,6 +88,13 @@ namespace Z80andrew.RetroImage.Services
             }
             
             return atariImage;
+        }
+
+        private bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        {
+            imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
+            imageFileStream.Seek(bodyBytes, SeekOrigin.Current);
+            return imageFileStream.ReadByte() != -1;
         }
 
         public Image<Rgba32> GetImageFromRawData(int width, int height, Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)
@@ -141,19 +162,20 @@ namespace Z80andrew.RetroImage.Services
             return degasImage;
         }
 
-        public byte[] GetDegasImageBody(FileStream imageFileStream, bool isCompressed, int width, int height, int bitPlanes)
+        public (int, byte[]) GetDegasImageBody(FileStream imageFileStream, bool isCompressed, int width, int height, int bitPlanes)
         {
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
-            int readLength = imageFileStream.Read(imageBytes, 0, imageBytes.Length);
+            imageFileStream.Read(imageBytes, 0, imageBytes.Length);
+            int bytesRead = SCREEN_MEMORY_BYTES;
 
             if (isCompressed)
             {
-                var uncompressedImage = Compression.DecompressPackBits(imageBytes);
+                (bytesRead, byte[] uncompressedImage) = Compression.DecompressPackBits(imageBytes);
                 imageBytes = Compression.InterleavePlanes(uncompressedImage, width, bitPlanes);
             }
 
-            return imageBytes;
+            return (bytesRead, imageBytes);
         }
 
         public Color[] GetDegasPalette(FileStream imageFileStream, int bitPlanes)
@@ -201,9 +223,9 @@ namespace Z80andrew.RetroImage.Services
                     animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex, animationIndex)
                     {
                         Direction = animationDirection,
-                        Delay = (float)(1 * 1000 / 60) * (128 - animationDelay)
+                        Delay = (float)(1000 / 60) * (128 - animationDelay)
                     });
-                }                
+                }
             }
 
             return animations.ToArray();
