@@ -22,6 +22,11 @@ namespace Z80andrew.RetroImage.Services
             return (width, height, bitPlanes);
         }
 
+        protected override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        {
+            return false;
+        }
+
         protected override bool GetIsCompressed(byte compression)
         {
             return false;

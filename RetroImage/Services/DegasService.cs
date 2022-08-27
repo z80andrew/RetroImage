@@ -107,7 +107,7 @@ namespace Z80andrew.RetroImage.Services
             return (width, height, bitPlanes);
         }
 
-        private bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        protected virtual bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
             bool hasValidAnimationData = true;
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
@@ -122,7 +122,7 @@ namespace Z80andrew.RetroImage.Services
                 // Valid EOF with animations
                 if (fileByte == -1 && maxAnimationBytes == 0) EOF = true;
 
-                // Pematurely hit EOF
+                // Hit EOF too early or too late
                 else if (fileByte == -1
                     || maxAnimationBytes < 0)
                 { 
@@ -237,7 +237,7 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        public Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        protected virtual Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
