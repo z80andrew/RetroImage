@@ -33,36 +33,15 @@ namespace Z80andrew.RetroImage.Services
 
             using (FileStream imageFileStream = File.OpenRead(path))
             {
-                int width = 0;
-                int height = 0;
-                int bitPlanes = 0;
-
                 byte compression = Convert.ToByte(imageFileStream.ReadByte());
 
-                var isCompressed = (compression & 0x80) == 0x80;
+                var isCompressed = GetIsCompressed(compression);
 
-                var resolution = (Resolution)imageFileStream.ReadByte();
+                var resolution = GetResolution(imageFileStream);
 
-                switch (resolution)
-                {
-                    case Resolution.LOW:
-                        width = 320;
-                        height = 200;
-                        bitPlanes = 4;
-                        break;
-                    case Resolution.MED:
-                        width = 640;
-                        height = 200;
-                        bitPlanes = 2;
-                        break;
-                    case Resolution.HIGH:
-                        width = 640;
-                        height = 400;
-                        bitPlanes = 1;
-                        break;
-                }
+                (var width, var height, var bitPlanes) = SetImageDimensions(resolution);
 
-                (var fileBodyByteCount, var imageBody) = GetDegasImageBody(imageFileStream, isCompressed, width, height, bitPlanes);                
+                (var fileBodyByteCount, var imageBody) = GetDegasImageBody(imageFileStream, isCompressed, width, height, bitPlanes);
                 var palette = GetDegasPalette(imageFileStream, bitPlanes);
                 var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
 
@@ -86,15 +65,75 @@ namespace Z80andrew.RetroImage.Services
                     Animations = animations
                 };
             }
-            
+
             return atariImage;
+        }
+
+        protected virtual Resolution GetResolution(FileStream imageFileStream)
+        {
+            return (Resolution)imageFileStream.ReadByte();
+        }
+
+        protected virtual bool GetIsCompressed(byte compression)
+        {
+            return (compression & 0x80) == 0x80;
+        }
+
+        protected virtual (int width, int height, int bitPlanes) SetImageDimensions(Resolution resolution)
+        {
+            int width = 0;
+            int height = 0;
+            int bitPlanes = 0;
+
+            switch (resolution)
+            {
+                case Resolution.LOW:
+                    width = 320;
+                    height = 200;
+                    bitPlanes = 4;
+                    break;
+                case Resolution.MED:
+                    width = 640;
+                    height = 200;
+                    bitPlanes = 2;
+                    break;
+                case Resolution.HIGH:
+                    width = 640;
+                    height = 400;
+                    bitPlanes = 1;
+                    break;
+            }
+
+            return (width, height, bitPlanes);
         }
 
         private bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
+            bool hasValidAnimationData = true;
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
             imageFileStream.Seek(bodyBytes, SeekOrigin.Current);
-            return imageFileStream.ReadByte() != -1;
+            int maxAnimationBytes = 0x20;
+            bool EOF = false;
+
+            while (!EOF)
+            {
+                var fileByte = imageFileStream.ReadByte();
+
+                // Valid EOF with animations
+                if (fileByte == -1 && maxAnimationBytes == 0) EOF = true;
+
+                // Pematurely hit EOF
+                else if (fileByte == -1
+                    || maxAnimationBytes < 0)
+                { 
+                    hasValidAnimationData = false;
+                    EOF = true;
+                }
+
+                maxAnimationBytes--;
+            }
+
+            return hasValidAnimationData;
         }
 
         public Image<Rgba32> GetImageFromRawData(int width, int height, Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)

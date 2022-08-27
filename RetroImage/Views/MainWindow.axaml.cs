@@ -42,7 +42,11 @@ namespace RetroImage.Views
                     case ".PC1":
                     case ".PC2":
                     case ".PC3":
+                    case ".PIC":
                         ViewModel.InitImage(new DegasService(), e.Data.GetFileNames().First());
+                        break;
+                    case ".DOO":
+                        ViewModel.InitImage(new DoodleService(), e.Data.GetFileNames().First());
                         break;
                 }
             }

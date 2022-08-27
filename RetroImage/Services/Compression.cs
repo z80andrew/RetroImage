@@ -10,13 +10,13 @@ namespace Z80andrew.RetroImage.Services
             byte[] data = new byte[Constants.SCREEN_MEMORY_BYTES];
             int sourceIndex = 0;
             int destIndex = 0;
-            int runLength = 0;
 
             while (destIndex < data.Length)
             {
                 var controlByte = imageBytes[sourceIndex];
                 sourceIndex++;
 
+                int runLength;
                 // RLE run
                 if (controlByte > 128)
                 {
@@ -38,7 +38,7 @@ namespace Z80andrew.RetroImage.Services
                 {
                     runLength = controlByte + 1;
 
-                    for(;runLength > 0; runLength--)
+                    for (; runLength > 0; runLength--)
                     {
                         data[destIndex] = imageBytes[sourceIndex];
                         destIndex++;

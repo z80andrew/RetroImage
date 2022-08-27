@@ -19,11 +19,11 @@
 	<DockPanel Name="MainDockPanel" LastChildFill="True" DragDrop.AllowDrop="True">		
 		<TextBlock DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 		<Panel DockPanel.Dock="Top">
-			<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding BaseImage}" Margin="20"/>
-			<Image IsVisible="{Binding IsAnimationLayer1Visible}" ZIndex="10" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}" Margin="20"/>
-			<Image IsVisible="{Binding IsAnimationLayer2Visible}" ZIndex="20" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}" Margin="20"/>
-			<Image IsVisible="{Binding IsAnimationLayer3Visible}" ZIndex="30" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}" Margin="20"/>
-			<Image IsVisible="{Binding IsAnimationLayer4Visible}" ZIndex="40" RenderOptions.BitmapInterpolationMode="HighQuality" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}" Margin="20"/>
+			<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer1Visible}" ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer2Visible}" ZIndex="20" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer3Visible}" ZIndex="30" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}" Margin="20"/>
+			<Image IsVisible="{Binding IsAnimationLayer4Visible}" ZIndex="40" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}" Margin="20"/>
 		</Panel>
 	</DockPanel>
 
