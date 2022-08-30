@@ -12,13 +12,18 @@ using SixLabors.ImageSharp.PixelFormats;
 using Z80andrew.RetroImage.Interfaces;
 using System.Diagnostics;
 using System;
+using Avalonia.Animation;
+using Animation = Z80andrew.RetroImage.Models.Animation;
 
 namespace RetroImage.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         private Timer[] _timers;
-        public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
+        //public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
+        public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
+        //public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
+
         public DegasService degasService;
 
         private bool _isAnimationLayer1Visible;
@@ -101,8 +106,10 @@ namespace RetroImage.ViewModels
         public MainWindowViewModel()
         {
             _timers = new Timer[4];
-            degasService = new DegasService();
-            InitImage(degasService, ImagePath);
+            //imageService = new DegasService();
+            var imageService = new IFFService();
+            //var imageService = new TinyService();
+            InitImage(imageService, ImagePath);
             Animate = true;
         }
 
@@ -110,17 +117,24 @@ namespace RetroImage.ViewModels
         {
             foreach (var timer in _timers)
             {
-                timer?.Dispose();
+                timer?.Stop();
             }
         }
 
         public void InitImage(IAtariImageService imageService, string imagePath)
         {
+            IsAnimationLayer1Visible = false;
+            IsAnimationLayer1Visible = false;
+            IsAnimationLayer1Visible = false;
+            IsAnimationLayer1Visible = false;
+
             ResetTimers();
             var atariImage = imageService.GetImage(imagePath);
             CurrentImageName = Path.GetFileName(imagePath);
             BaseImage = ConvertImageToBitmap(atariImage.Image);
             InitAnimations(atariImage.Animations);
+
+            _timers[0]?.Start();
         }
 
         public IBitmap ConvertImageToBitmap(Image<Rgba32> inputImage)
@@ -153,7 +167,6 @@ namespace RetroImage.ViewModels
                     };
 
                     _timers[animation.AnimationLayer].Elapsed += (sender, e) => AnimationTimer_Elapsed(sender, e, animation);
-                    _timers[animation.AnimationLayer].Start();
                 }
             }
 

@@ -26,5 +26,13 @@ namespace Z80andrew.RetroImage.Common
             MED,
             HIGH,
         }
+
+        public enum CompressionType
+        {
+            NONE = 0,
+            PACKBITS,
+            VERTICAL_RLE1,
+            VERTICAL_RLE2,
+        }
     }
 }

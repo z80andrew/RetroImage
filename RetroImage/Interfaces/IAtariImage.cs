@@ -15,7 +15,7 @@ namespace Z80andrew.RetroImage.Interfaces
         int Width { get; set; }
         int Height { get; set; }
         Resolution Resolution { get; set; }
-        bool IsCompressed { get; set; }
+        CompressionType Compression { get; set; }
         int NumBitPlanes { set; get; }
         Color[] Palette { get; set; }
         byte[] RawData { get; set; }

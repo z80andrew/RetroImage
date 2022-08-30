@@ -1,5 +1,10 @@
-﻿using System;
+﻿using DynamicData;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Z80andrew.RetroImage.Common;
+using Z80andrew.RetroImage.Models;
 
 namespace Z80andrew.RetroImage.Services
 {
@@ -50,6 +55,84 @@ namespace Z80andrew.RetroImage.Services
             return (sourceIndex, data);
         }
 
+        public static byte[] DecompressVerticalRLE(VerticalRleModel[] verticalRleData)
+        {
+            var output = new List<byte>();
+
+
+            foreach (var verticalRlePlane in verticalRleData)
+            {
+                int dataIndex = 0;
+                int commandIndex = 0;
+
+                while (dataIndex < verticalRlePlane.DataBytes.Length)
+                {
+                    var controlByte = (sbyte)verticalRlePlane.CommandBytes[commandIndex];
+                    commandIndex++;
+
+                    if (controlByte == 0)
+                    {
+                        var outputLength = verticalRlePlane.DataBytes[dataIndex++] << 8 | verticalRlePlane.DataBytes[dataIndex++];
+
+                        while (outputLength > 0)
+                        {
+                            output.Add(verticalRlePlane.DataBytes[dataIndex]++);
+                            output.Add(verticalRlePlane.DataBytes[dataIndex]++);
+                            outputLength--;
+                        }
+                    }
+
+                    else if (controlByte == 1)
+                    {
+                        var runLength = verticalRlePlane.DataBytes[dataIndex++] << 8 | verticalRlePlane.DataBytes[dataIndex++];
+
+                        var rleByte1 = verticalRlePlane.DataBytes[dataIndex++];
+                        var rleByte2 = verticalRlePlane.DataBytes[dataIndex++];
+
+                        while (runLength > 0)
+                        {
+                            output.Add(rleByte1);
+                            output.Add(rleByte2);
+                            runLength--;
+                        }
+                    }
+
+                    else if (controlByte < 0)
+                    {
+                        var outputLength = controlByte * -1;
+
+                        while (outputLength > 0)
+                        {
+                            output.Add(verticalRlePlane.DataBytes[dataIndex++]);
+                            output.Add(verticalRlePlane.DataBytes[dataIndex++]);
+                            outputLength--;
+                        }
+                    }
+
+                    else if (controlByte > 1)
+                    {
+                        var runLength = controlByte;
+
+                        var rleByte1 = verticalRlePlane.DataBytes[dataIndex++];
+                        var rleByte2 = verticalRlePlane.DataBytes[dataIndex++];
+
+                        while (runLength > 0)
+                        {
+                            output.Add(rleByte1);
+                            output.Add(rleByte2);
+                            runLength--;
+                        }
+                    }
+                }
+
+            }
+
+            Debug.WriteLine(output.Count);
+
+
+            return output.ToArray();
+        }
+
         public static byte[] InterleavePlanes(byte[] sequentialPlaneData, int width, int numPlanes)
         {
             byte[] screenMemoryData = new byte[sequentialPlaneData.Length];
@@ -84,6 +167,136 @@ namespace Z80andrew.RetroImage.Services
             }
 
             return screenMemoryData;
+        }
+
+        public static byte[] InterleaveVerticalPlanes(byte[] sequentialPlaneData, int width, int numPlanes)
+        {
+            byte[] screenMemoryData = new byte[32000]; //new byte[sequentialPlaneData.Length];
+
+            try
+            {
+                // Each pixel is 1 bit on a plane, and each word is 16 bits
+                int wordsPerBitplaneRow = width / 16;
+
+                for (int p = 0; p < numPlanes; p++)
+                {
+                    int destinationOffset = p * 2;
+                    var sourceOffset = p * (Constants.SCREEN_MEMORY_BYTES / 4);
+
+                    var destinationIndex = destinationOffset;
+
+                    for (int y = 0; y < 200; y++)
+                    {
+                        var sourceIndex = sourceOffset + (y * 2);
+
+                        for (int i = 0; i < wordsPerBitplaneRow; i++)
+                        {
+                            screenMemoryData[destinationIndex] = sequentialPlaneData[sourceIndex];
+                            screenMemoryData[destinationIndex + 1] = sequentialPlaneData[sourceIndex + 1];
+
+                            destinationIndex += (2 * numPlanes);
+                            sourceIndex += 2 * 200;
+                        }
+                    }
+                }
+            }
+
+            catch
+            {
+                Debug.WriteLine("Error arranging data");
+            }
+
+            return screenMemoryData;
+        }
+
+        internal static byte[] DecompressVerticalRLE(byte[] commandBytes, byte[] dataBytes)
+        {
+            var output = new List<byte>();
+
+
+            int dataIndex = 0;
+            int commandIndex = 0;
+
+            while (commandIndex < commandBytes.Length)
+            {
+                var controlByte = (sbyte)commandBytes[commandIndex];
+
+                if (controlByte == 1)
+                {
+                    commandIndex++;
+
+                    var outputLength = commandBytes[commandIndex] << 8 | commandBytes[commandIndex + 1];
+                    commandIndex += 2;
+
+                    while (outputLength > 0)
+                    {
+                        output.Add(dataBytes[dataIndex]);
+                        dataIndex++;
+                        output.Add(dataBytes[dataIndex]);
+                        dataIndex++;
+
+                        outputLength--;
+                    }
+                }
+
+                else if (controlByte == 0)
+                {
+                    commandIndex++;
+
+                    var runLength = commandBytes[commandIndex] << 8 | commandBytes[commandIndex + 1];
+                    commandIndex += 2;
+
+                    var rleByte1 = dataBytes[dataIndex];
+                    dataIndex++;
+                    var rleByte2 = dataBytes[dataIndex];
+                    dataIndex++;
+
+                    while (runLength > 0)
+                    {
+                        output.Add(rleByte1);
+                        output.Add(rleByte2);
+
+                        runLength--;
+                    }
+                }
+
+                else if (controlByte < 0)
+                {
+                    var outputLength = controlByte * -1;
+                    commandIndex++;
+
+                    while (outputLength > 0)
+                    {
+                        output.Add(dataBytes[dataIndex]);
+                        dataIndex++;
+                        output.Add(dataBytes[dataIndex]);
+                        dataIndex++;
+
+                        outputLength--;
+                    }
+                }
+
+                else if (controlByte > 1)
+                {
+                    var runLength = controlByte;
+                    commandIndex++;
+
+                    var rleByte1 = dataBytes[dataIndex];
+                    dataIndex++;
+                    var rleByte2 = dataBytes[dataIndex];
+                    dataIndex++;
+
+                    while (runLength > 0)
+                    {
+                        output.Add(rleByte1);
+                        output.Add(rleByte2);
+
+                        runLength--;
+                    }
+                }
+            }
+
+            return output.Take(Constants.SCREEN_MEMORY_BYTES).ToArray();
         }
     }
 }

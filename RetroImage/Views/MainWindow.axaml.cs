@@ -29,8 +29,6 @@ namespace RetroImage.Views
             Debug.WriteLine("Drop");
             if (e.Data.Contains(DataFormats.FileNames))
             {
-                ViewModel.CurrentImageName = Path.GetFileName(e.Data.GetFileNames().First());
-
                 switch(Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
                 {
                     case ".NEO":
@@ -47,6 +45,9 @@ namespace RetroImage.Views
                         break;
                     case ".DOO":
                         ViewModel.InitImage(new DoodleService(), e.Data.GetFileNames().First());
+                        break;
+                    case ".IFF":
+                        ViewModel.InitImage(new IFFService(), e.Data.GetFileNames().First());
                         break;
                 }
             }

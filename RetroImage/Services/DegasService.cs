@@ -33,16 +33,16 @@ namespace Z80andrew.RetroImage.Services
 
             using (FileStream imageFileStream = File.OpenRead(path))
             {
-                byte compression = Convert.ToByte(imageFileStream.ReadByte());
+                byte compressionValue = Convert.ToByte(imageFileStream.ReadByte());
 
-                var isCompressed = GetIsCompressed(compression);
+                var compression = GetCompressionType(compressionValue);
 
                 var resolution = GetResolution(imageFileStream);
 
                 (var width, var height, var bitPlanes) = SetImageDimensions(resolution);
 
-                (var fileBodyByteCount, var imageBody) = GetDegasImageBody(imageFileStream, isCompressed, width, height, bitPlanes);
-                var palette = GetDegasPalette(imageFileStream, bitPlanes);
+                (var fileBodyByteCount, var imageBody) = GetImageBody(imageFileStream, compression, width, height, bitPlanes);
+                var palette = GetPalette(imageFileStream, bitPlanes);
                 var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
 
                 var animations = new Animation[0];
@@ -57,7 +57,7 @@ namespace Z80andrew.RetroImage.Services
                     Width = width,
                     Height = height,
                     Resolution = resolution,
-                    IsCompressed = isCompressed,
+                    Compression = compression,
                     NumBitPlanes = bitPlanes,
                     Palette = palette,
                     Image = degasImage,
@@ -74,9 +74,9 @@ namespace Z80andrew.RetroImage.Services
             return (Resolution)imageFileStream.ReadByte();
         }
 
-        protected virtual bool GetIsCompressed(byte compression)
+        protected virtual CompressionType GetCompressionType(byte compression)
         {
-            return (compression & 0x80) == 0x80;
+            return (compression & 0x80) == 0x80 ? CompressionType.PACKBITS : CompressionType.NONE;
         }
 
         protected virtual (int width, int height, int bitPlanes) SetImageDimensions(Resolution resolution)
@@ -201,14 +201,14 @@ namespace Z80andrew.RetroImage.Services
             return degasImage;
         }
 
-        public (int, byte[]) GetDegasImageBody(FileStream imageFileStream, bool isCompressed, int width, int height, int bitPlanes)
+        public (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
         {
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
             imageFileStream.Read(imageBytes, 0, imageBytes.Length);
             int bytesRead = SCREEN_MEMORY_BYTES;
 
-            if (isCompressed)
+            if (compression == CompressionType.PACKBITS)
             {
                 (bytesRead, byte[] uncompressedImage) = Compression.DecompressPackBits(imageBytes);
                 imageBytes = Compression.InterleavePlanes(uncompressedImage, width, bitPlanes);
@@ -217,7 +217,7 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        public Color[] GetDegasPalette(FileStream imageFileStream, int bitPlanes)
+        public Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
         {
             var colors = new Color[(int)Math.Pow(2, bitPlanes)];
 

@@ -27,9 +27,9 @@ namespace Z80andrew.RetroImage.Services
             return false;
         }
 
-        protected override bool GetIsCompressed(byte compression)
+        protected override CompressionType GetCompressionType(byte compression)
         {
-            return false;
+            return CompressionType.NONE;
         }
 
         protected override Resolution GetResolution(FileStream imageFileStream)
