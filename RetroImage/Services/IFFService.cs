@@ -64,6 +64,18 @@ namespace Z80andrew.RetroImage.Services
 
             if (compression == CompressionType.PACKBITS)
             {
+                var vdatOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BODY, 0);
+                imageFileStream.Seek(vdatOffset, SeekOrigin.Begin);
+
+                imageFileStream.Seek(4, SeekOrigin.Current);
+
+                var chunkLength = (Convert.ToByte(imageFileStream.ReadByte()) << 24
+                    | Convert.ToByte(imageFileStream.ReadByte()) << 16
+                    | Convert.ToByte(imageFileStream.ReadByte()) << 8
+                    | Convert.ToByte(imageFileStream.ReadByte()));
+
+                imageFileStream.Read(imageBytes, 0, chunkLength);
+
                 (bytesRead, byte[] uncompressedImage) = Compression.DecompressPackBits(imageBytes);
                 imageBytes = Compression.InterleavePlanes(uncompressedImage, width, bitPlanes);
             }

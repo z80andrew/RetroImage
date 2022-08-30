@@ -124,7 +124,7 @@ namespace Z80andrew.RetroImage.Services
                     }
                 }
 
-                Debug.WriteLine(output.Count);
+                Debug.WriteLine($"Used {commandIndex} commands of {verticalRlePlane.CommandBytes.Length}");
             }
 
             return output.ToArray();
@@ -170,37 +170,29 @@ namespace Z80andrew.RetroImage.Services
         {
             byte[] screenMemoryData = new byte[32000]; //new byte[sequentialPlaneData.Length];
 
-            try
+            // Each pixel is 1 bit on a plane, and each word is 16 bits
+            int wordsPerBitplaneRow = width / 16;
+
+            for (int p = 0; p < numPlanes; p++)
             {
-                // Each pixel is 1 bit on a plane, and each word is 16 bits
-                int wordsPerBitplaneRow = width / 16;
+                int destinationOffset = p * 2;
+                var sourceOffset = p * (Constants.SCREEN_MEMORY_BYTES / 4);
 
-                for (int p = 0; p < numPlanes; p++)
+                var destinationIndex = destinationOffset;
+
+                for (int y = 0; y < height; y++)
                 {
-                    int destinationOffset = p * 2;
-                    var sourceOffset = p * (Constants.SCREEN_MEMORY_BYTES / 4);
+                    var sourceIndex = sourceOffset + (y * 2);
 
-                    var destinationIndex = destinationOffset;
-
-                    for (int y = 0; y < height; y++)
+                    for (int i = 0; i < wordsPerBitplaneRow; i++)
                     {
-                        var sourceIndex = sourceOffset + (y * 2);
+                        screenMemoryData[destinationIndex] = sequentialPlaneData[sourceIndex];
+                        screenMemoryData[destinationIndex + 1] = sequentialPlaneData[sourceIndex + 1];
 
-                        for (int i = 0; i < wordsPerBitplaneRow; i++)
-                        {
-                            screenMemoryData[destinationIndex] = sequentialPlaneData[sourceIndex];
-                            screenMemoryData[destinationIndex + 1] = sequentialPlaneData[sourceIndex + 1];
-
-                            destinationIndex += (2 * numPlanes);
-                            sourceIndex += 2 * height;
-                        }
+                        destinationIndex += (2 * numPlanes);
+                        sourceIndex += 2 * height;
                     }
                 }
-            }
-
-            catch
-            {
-                Debug.WriteLine("Error arranging data");
             }
 
             return screenMemoryData;
@@ -220,7 +212,7 @@ namespace Z80andrew.RetroImage.Services
                 commandIndex++;
 
                 if (controlByte == 1)
-                { 
+                {
                     var outputLength = commandBytes[commandIndex++] << 8 | commandBytes[commandIndex++];
 
                     while (outputLength > 0)
