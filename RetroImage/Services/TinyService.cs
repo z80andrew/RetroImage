@@ -37,10 +37,10 @@ namespace Z80andrew.RetroImage.Services
 
             using (FileStream imageFileStream = File.OpenRead(path))
             {
-                (var width, var height, var bitPlanes) = SetImageDimensions(imageFileStream);
+                (var width, var height, var bitPlanes, var resolution) = SetImageDimensions(imageFileStream);
                 var palette = GetPalette(imageFileStream, bitPlanes);
                 (var fileBodyByteCount, var imageBody) = GetImageBody(imageFileStream, width, height, bitPlanes);
-                var image = GetImageFromRawData(width, height, Resolution.LOW, bitPlanes, palette, imageBody);
+                var image = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
 
                 atariImage = new DegasImageModel()
                 {
@@ -75,7 +75,9 @@ namespace Z80andrew.RetroImage.Services
             imageFileStream.Read(dataBytes, 0, numDataWords*2);
 
             imageBytes = Compression.DecompressVerticalRLE(commandBytes, dataBytes);
-            imageBytes = Compression.InterleaveVerticalPlanes(imageBytes, width, bitPlanes);
+            
+            // Tiny treats every image as low resolution in regards to vertical interleaving
+            imageBytes = Compression.InterleaveVerticalPlanes(imageBytes, 320, 200, 4);
 
             return ((int)imageFileStream.Position, imageBytes);
         }
@@ -101,7 +103,7 @@ namespace Z80andrew.RetroImage.Services
         }
 
 
-        protected virtual (int width, int height, int bitPlanes) SetImageDimensions(FileStream imageFileStream)
+        protected virtual (int width, int height, int bitPlanes, Resolution resolution) SetImageDimensions(FileStream imageFileStream)
         {
                 imageFileStream.Position = 0;
 
@@ -130,7 +132,7 @@ namespace Z80andrew.RetroImage.Services
                         break;
                 }
 
-                return (width, height, bitPlanes);
+                return (width, height, bitPlanes, resolution);
         }
 
         public Image<Rgba32> GetImageFromRawData(int width, int height, Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)

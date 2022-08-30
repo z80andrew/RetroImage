@@ -103,7 +103,7 @@ namespace Z80andrew.RetroImage.Services
                 }
 
                 imageBytes = Compression.DecompressVerticalRLE(verticalRleData);
-                imageBytes = Compression.InterleaveVerticalPlanes(imageBytes, width, bitPlanes);
+                imageBytes = Compression.InterleaveVerticalPlanes(imageBytes, width, height, bitPlanes);
             }
 
             return (bytesRead, imageBytes);

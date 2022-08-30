@@ -49,6 +49,12 @@ namespace RetroImage.Views
                     case ".IFF":
                         ViewModel.InitImage(new IFFService(), e.Data.GetFileNames().First());
                         break;
+                    case ".TNY":
+                    case ".TN1":
+                    case ".TN2":
+                    case ".TN3":
+                        ViewModel.InitImage(new TinyService(), e.Data.GetFileNames().First());
+                        break;
                 }
             }
         }

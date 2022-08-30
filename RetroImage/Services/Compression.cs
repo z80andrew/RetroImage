@@ -59,7 +59,6 @@ namespace Z80andrew.RetroImage.Services
         {
             var output = new List<byte>();
 
-
             foreach (var verticalRlePlane in verticalRleData)
             {
                 int dataIndex = 0;
@@ -76,8 +75,8 @@ namespace Z80andrew.RetroImage.Services
 
                         while (outputLength > 0)
                         {
-                            output.Add(verticalRlePlane.DataBytes[dataIndex]++);
-                            output.Add(verticalRlePlane.DataBytes[dataIndex]++);
+                            output.Add(verticalRlePlane.DataBytes[dataIndex++]);
+                            output.Add(verticalRlePlane.DataBytes[dataIndex++]);
                             outputLength--;
                         }
                     }
@@ -125,10 +124,8 @@ namespace Z80andrew.RetroImage.Services
                     }
                 }
 
+                Debug.WriteLine(output.Count);
             }
-
-            Debug.WriteLine(output.Count);
-
 
             return output.ToArray();
         }
@@ -169,7 +166,7 @@ namespace Z80andrew.RetroImage.Services
             return screenMemoryData;
         }
 
-        public static byte[] InterleaveVerticalPlanes(byte[] sequentialPlaneData, int width, int numPlanes)
+        public static byte[] InterleaveVerticalPlanes(byte[] sequentialPlaneData, int width, int height, int numPlanes)
         {
             byte[] screenMemoryData = new byte[32000]; //new byte[sequentialPlaneData.Length];
 
@@ -185,7 +182,7 @@ namespace Z80andrew.RetroImage.Services
 
                     var destinationIndex = destinationOffset;
 
-                    for (int y = 0; y < 200; y++)
+                    for (int y = 0; y < height; y++)
                     {
                         var sourceIndex = sourceOffset + (y * 2);
 
@@ -195,7 +192,7 @@ namespace Z80andrew.RetroImage.Services
                             screenMemoryData[destinationIndex + 1] = sequentialPlaneData[sourceIndex + 1];
 
                             destinationIndex += (2 * numPlanes);
-                            sourceIndex += 2 * 200;
+                            sourceIndex += 2 * height;
                         }
                     }
                 }
@@ -220,42 +217,31 @@ namespace Z80andrew.RetroImage.Services
             while (commandIndex < commandBytes.Length)
             {
                 var controlByte = (sbyte)commandBytes[commandIndex];
+                commandIndex++;
 
                 if (controlByte == 1)
-                {
-                    commandIndex++;
-
-                    var outputLength = commandBytes[commandIndex] << 8 | commandBytes[commandIndex + 1];
-                    commandIndex += 2;
+                { 
+                    var outputLength = commandBytes[commandIndex++] << 8 | commandBytes[commandIndex++];
 
                     while (outputLength > 0)
                     {
-                        output.Add(dataBytes[dataIndex]);
-                        dataIndex++;
-                        output.Add(dataBytes[dataIndex]);
-                        dataIndex++;
-
+                        output.Add(dataBytes[dataIndex++]);
+                        output.Add(dataBytes[dataIndex++]);
                         outputLength--;
                     }
                 }
 
                 else if (controlByte == 0)
                 {
-                    commandIndex++;
+                    var runLength = commandBytes[commandIndex++] << 8 | commandBytes[commandIndex++];
 
-                    var runLength = commandBytes[commandIndex] << 8 | commandBytes[commandIndex + 1];
-                    commandIndex += 2;
-
-                    var rleByte1 = dataBytes[dataIndex];
-                    dataIndex++;
-                    var rleByte2 = dataBytes[dataIndex];
-                    dataIndex++;
+                    var rleByte1 = dataBytes[dataIndex++];
+                    var rleByte2 = dataBytes[dataIndex++];
 
                     while (runLength > 0)
                     {
                         output.Add(rleByte1);
                         output.Add(rleByte2);
-
                         runLength--;
                     }
                 }
@@ -263,15 +249,11 @@ namespace Z80andrew.RetroImage.Services
                 else if (controlByte < 0)
                 {
                     var outputLength = controlByte * -1;
-                    commandIndex++;
 
                     while (outputLength > 0)
                     {
-                        output.Add(dataBytes[dataIndex]);
-                        dataIndex++;
-                        output.Add(dataBytes[dataIndex]);
-                        dataIndex++;
-
+                        output.Add(dataBytes[dataIndex++]);
+                        output.Add(dataBytes[dataIndex++]);
                         outputLength--;
                     }
                 }
@@ -279,18 +261,14 @@ namespace Z80andrew.RetroImage.Services
                 else if (controlByte > 1)
                 {
                     var runLength = controlByte;
-                    commandIndex++;
 
-                    var rleByte1 = dataBytes[dataIndex];
-                    dataIndex++;
-                    var rleByte2 = dataBytes[dataIndex];
-                    dataIndex++;
+                    var rleByte1 = dataBytes[dataIndex++];
+                    var rleByte2 = dataBytes[dataIndex++];
 
                     while (runLength > 0)
                     {
                         output.Add(rleByte1);
                         output.Add(rleByte2);
-
                         runLength--;
                     }
                 }
