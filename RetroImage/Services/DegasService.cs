@@ -1,89 +1,47 @@
 ﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Z80andrew.RetroImage.Interfaces;
+using Z80andrew.RetroImage.Helpers;
 using Z80andrew.RetroImage.Models;
 using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Services
 {
-    public class DegasService : IAtariImageService
+    internal class DegasService : AtariImageService
     {
-        protected byte PALETTE_OFFSET;
-        protected byte BODY_OFFSET;
-        protected byte MAX_ANIMATIONS;
+        internal byte PALETTE_OFFSET;
+        internal byte BODY_OFFSET;
+        internal byte MAX_ANIMATIONS;
 
         public DegasService()
         {
             Init();
         }
 
-        protected virtual void Init()
+        internal virtual void Init()
         {
             PALETTE_OFFSET = 0x02;
             BODY_OFFSET = 0x22;
             MAX_ANIMATIONS = 0x04;
         }
 
-        public IAtariImage GetImage(string path)
+        internal override CompressionType GetCompressionType(FileStream imageFileStream)
         {
-            IAtariImage atariImage;
+            imageFileStream.Seek(0, SeekOrigin.Begin);
+            var compression = imageFileStream.ReadByte();
 
-            using (FileStream imageFileStream = File.OpenRead(path))
-            {
-                byte compressionValue = Convert.ToByte(imageFileStream.ReadByte());
-
-                var compression = GetCompressionType(compressionValue);
-
-                var resolution = GetResolution(imageFileStream);
-
-                (var width, var height, var bitPlanes) = SetImageDimensions(resolution);
-
-                (var fileBodyByteCount, var imageBody) = GetImageBody(imageFileStream, compression, width, height, bitPlanes);
-                var palette = GetPalette(imageFileStream, bitPlanes);
-                var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
-
-                var animations = new Animation[0];
-
-                if (ImageHasAnimationData(imageFileStream, fileBodyByteCount))
-                {
-                    animations = GetAnimations(imageFileStream, imageBody, width, height, resolution, bitPlanes, palette);
-                }
-
-                atariImage = new DegasImageModel()
-                {
-                    Width = width,
-                    Height = height,
-                    Resolution = resolution,
-                    Compression = compression,
-                    NumBitPlanes = bitPlanes,
-                    Palette = palette,
-                    Image = degasImage,
-                    RawData = imageBody,
-                    Animations = animations
-                };
-            }
-
-            return atariImage;
-        }
-
-        protected virtual Resolution GetResolution(FileStream imageFileStream)
-        {
-            return (Resolution)imageFileStream.ReadByte();
-        }
-
-        protected virtual CompressionType GetCompressionType(byte compression)
-        {
             return (compression & 0x80) == 0x80 ? CompressionType.PACKBITS : CompressionType.NONE;
         }
 
-        protected virtual (int width, int height, int bitPlanes) SetImageDimensions(Resolution resolution)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
         {
-            int width = 0;
-            int height = 0;
-            int bitPlanes = 0;
+            imageFileStream.Seek(1, SeekOrigin.Begin);
+            var resolution = (Resolution)imageFileStream.ReadByte();
+
+            int width = -1;
+            int height = -1;
+            int bitPlanes = -1;
 
             switch (resolution)
             {
@@ -104,10 +62,10 @@ namespace Z80andrew.RetroImage.Services
                     break;
             }
 
-            return (width, height, bitPlanes);
+            return (resolution, width, height, bitPlanes);
         }
 
-        protected virtual bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
             bool hasValidAnimationData = true;
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
@@ -125,7 +83,7 @@ namespace Z80andrew.RetroImage.Services
                 // Hit EOF too early or too late
                 else if (fileByte == -1
                     || maxAnimationBytes < 0)
-                { 
+                {
                     hasValidAnimationData = false;
                     EOF = true;
                 }
@@ -136,72 +94,7 @@ namespace Z80andrew.RetroImage.Services
             return hasValidAnimationData;
         }
 
-        public Image<Rgba32> GetImageFromRawData(int width, int height, Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)
-        {
-            int x = 0;
-            int y = 0;
-            int arrayIndex = 0;
-            // Medium res on the Atari is stretched 2x vertically            
-            int yIncrement = resolution == Resolution.MED ? 2 : 1;
-            var outputHeight = resolution == Resolution.MED ? height * 2 : height;
-
-            var degasImage = new Image<Rgba32>(width, outputHeight, RGBA_TRANSPARENT);
-
-            while (y < outputHeight)
-            {
-                while (x < width)
-                {
-                    // Each bitplane has 1 word (2 bytes) of contiguous image data
-                    for (int byteIndex = 0; byteIndex < 2; byteIndex++)
-                    {
-                        for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
-                        {
-                            byte bitMask = (byte)Math.Pow(2, bitIndex);
-
-                            if (resolution == Resolution.LOW)
-                            {
-                                var pixelByte = Convert.ToByte(
-                                    ((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask)
-                                    | ((imageBytes[arrayIndex + byteIndex + 2] & bitMask) / bitMask) << 1
-                                    | ((imageBytes[arrayIndex + byteIndex + 4] & bitMask) / bitMask) << 2
-                                    | ((imageBytes[arrayIndex + byteIndex + 6] & bitMask) / bitMask) << 3);
-
-                                degasImage[x, y] = colors[pixelByte];
-                                x++;
-                            }
-
-                            else if (resolution == Resolution.MED)
-                            {
-                                var pixelByte = Convert.ToByte(
-                                    ((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask)
-                                    | ((imageBytes[arrayIndex + byteIndex + 2] & bitMask) / bitMask) << 1);
-
-                                degasImage[x, y] = colors[pixelByte];
-                                degasImage[x, y + 1] = colors[pixelByte];
-                                x++;
-                            }
-
-                            else if (resolution == Resolution.HIGH)
-                            {
-                                var pixelByte = Convert.ToByte((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask);
-                                degasImage[x, y] = pixelByte == 0 ? Color.White : Color.Black;
-                                x++;
-                            }
-                        }
-                    }
-
-                    // Advance to next bitplane word
-                    arrayIndex += (bitPlanes * 2);
-                }
-
-                x = 0;
-                y += yIncrement;
-            }
-
-            return degasImage;
-        }
-
-        public (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
+        internal override (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
         {
             imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
@@ -217,7 +110,7 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        public Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
+        internal override Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
         {
             var colors = new Color[(int)Math.Pow(2, bitPlanes)];
 
@@ -237,7 +130,7 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        protected virtual Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 

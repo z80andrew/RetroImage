@@ -1,18 +1,14 @@
 using Avalonia.Media.Imaging;
 using ReactiveUI;
-using System.ComponentModel;
-using System.IO;
-using System.Timers;
-using Z80andrew.RetroImage.Models;
-using Z80andrew.RetroImage.Services;
-using static Z80andrew.RetroImage.Common.Constants;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
-using Z80andrew.RetroImage.Interfaces;
+using System.ComponentModel;
 using System.Diagnostics;
-using System;
-using Avalonia.Animation;
+using System.IO;
+using System.Timers;
+using Z80andrew.RetroImage.Services;
+using static Z80andrew.RetroImage.Common.Constants;
 using Animation = Z80andrew.RetroImage.Models.Animation;
 
 namespace RetroImage.ViewModels
@@ -24,7 +20,7 @@ namespace RetroImage.ViewModels
         public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
         //public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
 
-        public DegasService degasService;
+        internal DegasService degasService;
 
         private bool _isAnimationLayer1Visible;
         public bool IsAnimationLayer1Visible
@@ -106,7 +102,7 @@ namespace RetroImage.ViewModels
         public MainWindowViewModel()
         {
             _timers = new Timer[4];
-            //imageService = new DegasService();
+            //var imageService = new DegasService();
             var imageService = new IFFService();
             //var imageService = new TinyService();
             InitImage(imageService, ImagePath);
@@ -121,7 +117,7 @@ namespace RetroImage.ViewModels
             }
         }
 
-        public void InitImage(IAtariImageService imageService, string imagePath)
+        internal void InitImage(AtariImageService imageService, string imagePath)
         {
             IsAnimationLayer1Visible = false;
             IsAnimationLayer1Visible = false;
@@ -154,7 +150,7 @@ namespace RetroImage.ViewModels
 
         private void InitAnimations(Animation[] animations)
         {
-            foreach(var animation in animations)
+            foreach (var animation in animations)
             {
                 Debug.WriteLine($"Setting up animation {animation.AnimationLayer}");
 

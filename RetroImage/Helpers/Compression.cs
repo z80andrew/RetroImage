@@ -1,12 +1,10 @@
-﻿using DynamicData;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Z80andrew.RetroImage.Common;
 using Z80andrew.RetroImage.Models;
 
-namespace Z80andrew.RetroImage.Services
+namespace Z80andrew.RetroImage.Helpers
 {
     internal class Compression
     {

@@ -1,40 +1,35 @@
 ﻿using System.IO;
-using Z80andrew.RetroImage.Interfaces;
 using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Services
 {
-    internal class DoodleService : DegasService, IAtariImageService
+    internal class DoodleService : DegasService
     {
-        protected override void Init()
+        internal override void Init()
         {
             PALETTE_OFFSET = 0x00;
             BODY_OFFSET = 0x00;
             MAX_ANIMATIONS = 0x00;
         }
 
-        protected override (int width, int height, int bitPlanes) SetImageDimensions(Resolution resolution)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
         {
+            var resolution = Resolution.HIGH;
             int width = 640;
-            int height = 480;
+            int height = 400;
             int bitPlanes = 1;
 
-            return (width, height, bitPlanes);
+            return (resolution, width, height, bitPlanes);
         }
 
-        protected override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
             return false;
         }
 
-        protected override CompressionType GetCompressionType(byte compression)
+        internal override CompressionType GetCompressionType(FileStream imageFileStream)
         {
             return CompressionType.NONE;
-        }
-
-        protected override Resolution GetResolution(FileStream imageFileStream)
-        {
-            return Resolution.HIGH;
         }
     }
 }

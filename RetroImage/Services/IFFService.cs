@@ -1,19 +1,14 @@
 ﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Z80andrew.RetroImage.Common;
-using Z80andrew.RetroImage.Interfaces;
+using Z80andrew.RetroImage.Helpers;
 using Z80andrew.RetroImage.Models;
 using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Services
 {
-    internal class IFFService : IAtariImageService
+    internal class IFFService : AtariImageService
     {
         private const string CHUNK_ID_FORM = "FORM";
         private const string CHUNK_ID_INTERLEAVED_BITMAP = "ILBM";
@@ -24,35 +19,21 @@ namespace Z80andrew.RetroImage.Services
         private const string CHUNK_ID_BODY = "BODY";
         private const string CHUNK_ID_VERTICAL_DATA = "VDAT";
 
-        public IAtariImage GetImage(string path)
+        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
-            IAtariImage atariImage;
-
-            using (FileStream imageFileStream = File.OpenRead(path))
-            {
-                var palette = GetPalette(imageFileStream);
-                (var width, var height, var bitPlanes, var compression) = SetImageDimensions(imageFileStream);
-                (var fileBodyByteCount, var imageBody) = GetImageBody(imageFileStream, compression, width, height, bitPlanes);
-                var image = GetImageFromRawData(width, height, Resolution.LOW, bitPlanes, palette, imageBody);
-
-                atariImage = new DegasImageModel()
-                {
-                    Width = width,
-                    Height = height,
-                    Resolution = Resolution.LOW,
-                    Compression = compression,
-                    NumBitPlanes = bitPlanes,
-                    Palette = palette,
-                    Image = image,
-                    RawData = imageBody,
-                    Animations = new Animation[0]
-                };
-            }
-
-            return atariImage;
+            throw new NotImplementedException();
         }
 
-        public (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
+        internal override CompressionType GetCompressionType(FileStream imageFileStream)
+        {
+            var headerOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BITMAP_HEADER);
+            imageFileStream.Seek(headerOffset + 18, SeekOrigin.Begin);
+            var compression = (CompressionType)imageFileStream.ReadByte();
+
+            return compression;
+        }
+
+        internal override (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
         {
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
 
@@ -121,13 +102,36 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        public Color[] GetPalette(FileStream imageFileStream)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
+        {
+            var headerOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BITMAP_HEADER);
+
+            imageFileStream.Seek(headerOffset + 8, SeekOrigin.Begin);
+
+            int width = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+            int height = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+            imageFileStream.Seek(4, SeekOrigin.Current);
+            int bitPlanes = imageFileStream.ReadByte();
+
+            var resolution = Resolution.LOW;
+
+            if (width == 640)
+            {
+                if (height == 200) resolution = Resolution.MED;
+                else if (height == 400) resolution = Resolution.HIGH;
+            }
+
+            return (resolution, width, height, bitPlanes);
+        }
+
+        internal override Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
         {
             var paletteOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLORMAP);
 
             // Offset + chunk header + first 3 bytes of longword
             imageFileStream.Seek(paletteOffset + 4 + 3, SeekOrigin.Begin);
 
+            // Number of colors is length of chunk div 3-component RGB
             var numColors = imageFileStream.ReadByte() / 3;
 
             var colors = new Color[numColors];
@@ -145,91 +149,9 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-
-        protected virtual (int width, int height, int bitPlanes, CompressionType compression) SetImageDimensions(FileStream imageFileStream)
+        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
-            var headerOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BITMAP_HEADER);
-
-            imageFileStream.Seek(headerOffset + 8, SeekOrigin.Begin);
-
-            int width = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-            int height = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-            imageFileStream.Seek(4, SeekOrigin.Current);
-            int bitPlanes = imageFileStream.ReadByte();
-            imageFileStream.Seek(1, SeekOrigin.Current);
-            var compression = (CompressionType)imageFileStream.ReadByte();
-
-            return (width, height, bitPlanes, compression);
-        }
-
-        public Image<Rgba32> GetImageFromRawData(int width, int height, Constants.Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)
-        {
-            int x = 0;
-            int y = 0;
-            int arrayIndex = 0;
-            // Medium res on the Atari is stretched 2x vertically            
-            int yIncrement = resolution == Resolution.MED ? 2 : 1;
-            var outputHeight = resolution == Resolution.MED ? height * 2 : height;
-
-            var degasImage = new Image<Rgba32>(width, outputHeight, RGBA_TRANSPARENT);
-
-            try
-            {
-                while (y < outputHeight)
-                {
-                    while (x < width)
-                    {
-                        // Each bitplane has 1 word (2 bytes) of contiguous image data
-                        for (int byteIndex = 0; byteIndex < 2; byteIndex++)
-                        {
-                            for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
-                            {
-                                byte bitMask = (byte)Math.Pow(2, bitIndex);
-
-                                if (resolution == Resolution.LOW)
-                                {
-                                    var pixelByte = Convert.ToByte(
-                                        ((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask)
-                                        | ((imageBytes[arrayIndex + byteIndex + 2] & bitMask) / bitMask) << 1
-                                        | ((imageBytes[arrayIndex + byteIndex + 4] & bitMask) / bitMask) << 2
-                                        | ((imageBytes[arrayIndex + byteIndex + 6] & bitMask) / bitMask) << 3);
-
-                                    degasImage[x, y] = colors[pixelByte];
-                                    x++;
-                                }
-
-                                else if (resolution == Resolution.MED)
-                                {
-                                    var pixelByte = Convert.ToByte(
-                                        ((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask)
-                                        | ((imageBytes[arrayIndex + byteIndex + 2] & bitMask) / bitMask) << 1);
-
-                                    degasImage[x, y] = colors[pixelByte];
-                                    degasImage[x, y + 1] = colors[pixelByte];
-                                    x++;
-                                }
-
-                                else if (resolution == Resolution.HIGH)
-                                {
-                                    var pixelByte = Convert.ToByte((imageBytes[arrayIndex + byteIndex] & bitMask) / bitMask);
-                                    degasImage[x, y] = pixelByte == 0 ? Color.White : Color.Black;
-                                    x++;
-                                }
-                            }
-                        }
-
-                        // Advance to next bitplane word
-                        arrayIndex += (bitPlanes * 2);
-                    }
-
-                    x = 0;
-                    y += yIncrement;
-                }
-            }
-
-            catch { }
-
-            return degasImage;
+            return false;
         }
 
         private int GetChunkOffset(string filePath, string chunkID, int startIndex = 0)

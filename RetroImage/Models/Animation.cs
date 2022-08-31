@@ -14,14 +14,14 @@ namespace Z80andrew.RetroImage.Models
         private int NumFrames { get; set; }
         public Image<Rgba32>[] Frames;
 
-        public Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
+        internal Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
         {
             NumFrames = upperPaletteIndex - lowerPaletteIndex;
             Frames = GenerateFrames(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex);
             AnimationLayer = animationLayer;
         }
 
-        private Image<Rgba32>[] GenerateFrames(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
+        internal Image<Rgba32>[] GenerateFrames(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
         {
             var degasService = new DegasService();
 
@@ -83,7 +83,7 @@ namespace Z80andrew.RetroImage.Models
         internal void AdvanceFrame()
         {
             FrameIndex++;
-            if(FrameIndex > NumFrames-1) FrameIndex = 0;
+            if (FrameIndex > NumFrames - 1) FrameIndex = 0;
         }
     }
 }

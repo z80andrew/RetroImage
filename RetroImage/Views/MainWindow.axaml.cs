@@ -1,12 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using System.Diagnostics;
-using System;
-using System.Linq;
 using Avalonia.ReactiveUI;
 using RetroImage.ViewModels;
-using Z80andrew.RetroImage.Services;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using Z80andrew.RetroImage.Services;
 
 namespace RetroImage.Views
 {
@@ -24,12 +23,12 @@ namespace RetroImage.Views
             AddHandler(DragDrop.DropEvent, Drop);
         }
 
-        private void Drop(object sender, DragEventArgs e)
+        internal void Drop(object sender, DragEventArgs e)
         {
             Debug.WriteLine("Drop");
             if (e.Data.Contains(DataFormats.FileNames))
             {
-                switch(Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
+                switch (Path.GetExtension(e.Data.GetFileNames().First()).ToUpper())
                 {
                     case ".NEO":
                         ViewModel.InitImage(new NEOchromeService(), e.Data.GetFileNames().First());

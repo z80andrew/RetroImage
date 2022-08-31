@@ -3,23 +3,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Z80andrew.RetroImage.Common;
-using Z80andrew.RetroImage.Interfaces;
 using Z80andrew.RetroImage.Models;
 using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Services
 {
-    internal class NEOchromeService : DegasService, IAtariImageService
+    internal class NEOchromeService : DegasService
     {
         private int ANIMATION_OFFSET = 0x30;
-        protected override void Init()
+        internal override void Init()
         {
             PALETTE_OFFSET = 0x04;
             BODY_OFFSET = 0x80;
             MAX_ANIMATIONS = 0x04;
         }
 
-        protected override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
             bool imageHasAnimationData = false;
 
@@ -27,7 +26,7 @@ namespace Z80andrew.RetroImage.Services
 
             var animationValidByte = imageFileStream.ReadByte();
 
-            if((animationValidByte & 0x80) == 0x80)
+            if ((animationValidByte & 0x80) == 0x80)
             {
                 imageHasAnimationData = true;
             }
@@ -35,13 +34,11 @@ namespace Z80andrew.RetroImage.Services
             return imageHasAnimationData;
         }
 
-        protected override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
-            bool imageHasAnimationData = false;
-
-            imageFileStream.Seek(ANIMATION_OFFSET+1, SeekOrigin.Begin);
+            imageFileStream.Seek(ANIMATION_OFFSET + 1, SeekOrigin.Begin);
 
             var animationLimitsByte = Convert.ToByte(imageFileStream.ReadByte());
 
@@ -58,7 +55,7 @@ namespace Z80andrew.RetroImage.Services
 
             if (vBlanks < 0) vBlanks *= -1;
 
-            var animationDelay = (1000/60) * (vBlanks - 1);
+            var animationDelay = (1000 / 60) * (vBlanks - 1);
 
             if (animationEnabled)
             {
