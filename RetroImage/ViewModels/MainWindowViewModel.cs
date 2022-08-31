@@ -17,10 +17,10 @@ namespace RetroImage.ViewModels
     {
         private Timer[] _timers;
         //public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
-        public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
-        //public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
+        //public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
+        public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
 
-        internal DegasService degasService;
+        private ImageFormatService _imageFormatService;
 
         private bool _isAnimationLayer1Visible;
         public bool IsAnimationLayer1Visible
@@ -102,10 +102,8 @@ namespace RetroImage.ViewModels
         public MainWindowViewModel()
         {
             _timers = new Timer[4];
-            //var imageService = new DegasService();
-            var imageService = new IFFService();
-            //var imageService = new TinyService();
-            InitImage(imageService, ImagePath);
+            _imageFormatService = new ImageFormatService();
+            InitImage(ImagePath);
             Animate = true;
         }
 
@@ -117,7 +115,7 @@ namespace RetroImage.ViewModels
             }
         }
 
-        internal void InitImage(AtariImageService imageService, string imagePath)
+        internal void InitImage(string imagePath)
         {
             IsAnimationLayer1Visible = false;
             IsAnimationLayer1Visible = false;
@@ -125,7 +123,8 @@ namespace RetroImage.ViewModels
             IsAnimationLayer1Visible = false;
 
             ResetTimers();
-            var atariImage = imageService.GetImage(imagePath);
+            
+            var atariImage = _imageFormatService.GetImageServiceForFileExtension(imagePath).GetImage(imagePath);
             CurrentImageName = Path.GetFileName(imagePath);
             BaseImage = ConvertImageToBitmap(atariImage.Image);
             InitAnimations(atariImage.Animations);
