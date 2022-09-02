@@ -25,13 +25,11 @@ namespace Z80andrew.RetroImage.Models
         {
             var degasService = new DegasService();
 
-            int numFrames = upperPaletteIndex - lowerPaletteIndex;
+            int numFrames = (upperPaletteIndex - lowerPaletteIndex) + 1;
 
             var frames = new Image<Rgba32>[numFrames];
 
-            var currentPalette = palette;
-
-            var baseImage = degasService.GetImageFromRawData(
+            frames[0] = degasService.GetImageFromRawData(
                 width,
                 height,
                 resolution,
@@ -40,7 +38,9 @@ namespace Z80andrew.RetroImage.Models
                 imageBody
                 );
 
-            for (int i = 0; i < numFrames; i++)
+            var currentPalette = palette;
+
+            for (int i = 1; i < numFrames; i++)
             {
                 var newPalette = new Color[palette.Length];
 
@@ -71,7 +71,7 @@ namespace Z80andrew.RetroImage.Models
                 {
                     for (int x = 0; x < frames[i].Width; x++)
                     {
-                        if (frames[i][x, y] == baseImage[x, y]) animationFrames[i][x, y] = RGBA_TRANSPARENT;
+                        if (frames[i][x, y] == frames[0][x, y]) animationFrames[i][x, y] = RGBA_TRANSPARENT;
                         else animationFrames[i][x, y] = frames[i][x, y];
                     }
                 }
@@ -83,7 +83,7 @@ namespace Z80andrew.RetroImage.Models
         internal void AdvanceFrame()
         {
             FrameIndex++;
-            if (FrameIndex > NumFrames - 1) FrameIndex = 0;
+            if (FrameIndex > NumFrames) FrameIndex = 0;
         }
     }
 }

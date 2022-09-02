@@ -1,5 +1,6 @@
 ﻿using SixLabors.ImageSharp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Z80andrew.RetroImage.Helpers;
@@ -18,11 +19,6 @@ namespace Z80andrew.RetroImage.Services
         private const string CHUNK_ID_AMIGA_VIEWPORT = "CAMG";
         private const string CHUNK_ID_BODY = "BODY";
         private const string CHUNK_ID_VERTICAL_DATA = "VDAT";
-
-        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
-        {
-            throw new NotImplementedException();
-        }
 
         internal override CompressionType GetCompressionType(FileStream imageFileStream)
         {
@@ -151,7 +147,54 @@ namespace Z80andrew.RetroImage.Services
 
         internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
         {
-            return false;
+            var hasAnimations = false;
+            var animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE);
+
+            if (animOffset != -1)
+            {
+                imageFileStream.Seek(animOffset + 12, SeekOrigin.Begin);
+                var animationEnabled = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                if (animationEnabled == 1) hasAnimations = true;
+            }
+
+            return hasAnimations;
+        }
+
+        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        {
+            var animations = new List<Animation>(0);
+            var animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE);
+
+            while (animOffset != -1)
+            {
+                imageFileStream.Seek(animOffset + 12, SeekOrigin.Begin);
+                var animationEnabled = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                
+                if (animationEnabled == 1)
+                {
+                    imageFileStream.Seek(-4, SeekOrigin.Current);
+                    var animationSpeed = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+
+                    if (animationSpeed != 0)
+                    {
+                        var animationDelay = (float)1000/60 * (16384 / animationSpeed);
+
+                        imageFileStream.Seek(2, SeekOrigin.Current);
+                        var lowerLimit = imageFileStream.ReadByte();
+                        var upperLimit = imageFileStream.ReadByte();
+
+                        animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerLimit, upperLimit, 0)
+                        {
+                            Delay = animationDelay,
+                            Direction = AnimationDirection.Right
+                        });
+                    }
+
+                    animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE, (int)imageFileStream.Position);
+                }
+            }
+
+            return animations.ToArray();
         }
 
         private int GetChunkOffset(string filePath, string chunkID, int startIndex = 0)

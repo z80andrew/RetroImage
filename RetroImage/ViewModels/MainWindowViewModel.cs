@@ -1,8 +1,12 @@
+using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Threading;
 using ReactiveUI;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -15,10 +19,11 @@ namespace RetroImage.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
-        private Timer[] _timers;
-        //public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
+        private DispatcherTimer[] _timers;
+        public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
         //public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
-        public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
+        //public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
+        private IBitmap _blankBitmap;
 
         private ImageFormatService _imageFormatService;
 
@@ -101,14 +106,23 @@ namespace RetroImage.ViewModels
 
         public MainWindowViewModel()
         {
-            _timers = new Timer[4];
+            _timers = new DispatcherTimer[4];
             _imageFormatService = new ImageFormatService();
             InitImage(ImagePath);
             Animate = true;
+
+            var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
+            Image<Rgba32> blankImg = (Image<Rgba32>)Image.Load(assets.Open(new Uri(@"avares://RetroImage/Assets/Images/empty.png")));
+            _blankBitmap = ConvertImageToBitmap(blankImg);
         }
 
-        private void ResetTimers()
+        private void ResetAnimations()
         {
+            AnimationLayer1Image = _blankBitmap;
+            AnimationLayer2Image = _blankBitmap;
+            AnimationLayer3Image = _blankBitmap;
+            AnimationLayer4Image = _blankBitmap;
+
             foreach (var timer in _timers)
             {
                 timer?.Stop();
@@ -117,19 +131,13 @@ namespace RetroImage.ViewModels
 
         internal void InitImage(string imagePath)
         {
-            IsAnimationLayer1Visible = false;
-            IsAnimationLayer1Visible = false;
-            IsAnimationLayer1Visible = false;
-            IsAnimationLayer1Visible = false;
+            ResetAnimations();
 
-            ResetTimers();
-            
             var atariImage = _imageFormatService.GetImageServiceForFileExtension(imagePath).GetImage(imagePath);
             CurrentImageName = Path.GetFileName(imagePath);
             BaseImage = ConvertImageToBitmap(atariImage.Image);
-            InitAnimations(atariImage.Animations);
 
-            _timers[0]?.Start();
+            InitAnimations(atariImage.Animations);
         }
 
         public IBitmap ConvertImageToBitmap(Image<Rgba32> inputImage)
@@ -155,23 +163,18 @@ namespace RetroImage.ViewModels
 
                 if (animation.Direction != AnimationDirection.None)
                 {
-                    _timers[animation.AnimationLayer] = new Timer()
+                    _timers[animation.AnimationLayer] = new DispatcherTimer()
                     {
-                        Enabled = Animate,
-                        Interval = animation.Delay,
+                        Interval = new TimeSpan(0,0,0,0,(int)animation.Delay),
+                        IsEnabled = true
                     };
 
-                    _timers[animation.AnimationLayer].Elapsed += (sender, e) => AnimationTimer_Elapsed(sender, e, animation);
+                    _timers[animation.AnimationLayer].Tick += (sender, e) => AnimationTimer_Elapsed(sender, e, animation);
                 }
             }
-
-            IsAnimationLayer1Visible = animations.Length > 0 ? true : false;
-            IsAnimationLayer2Visible = animations.Length > 1 ? true : false;
-            IsAnimationLayer3Visible = animations.Length > 2 ? true : false;
-            IsAnimationLayer4Visible = animations.Length > 3 ? true : false;
         }
 
-        private void AnimationTimer_Elapsed(object? sender, ElapsedEventArgs e, Animation animation)
+        private void AnimationTimer_Elapsed(object? sender, EventArgs e, Animation animation)
         {
             if (Animate)
             {
