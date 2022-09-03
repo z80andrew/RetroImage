@@ -4,13 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-		d:DesignWidth="640"
-		d:DesignHeight="460"
-		Width="640"
-		Height="430"
+		d:DesignWidth="485"
+		d:DesignHeight="360"
+		Width="485"
+		Height="360"
         x:Class="RetroImage.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="RetroImage" Margin="0" Padding="0">
+        Title="RetroImage" Margin="0" Padding="0"
+		 SizeToContent="WidthAndHeight">
 
 	<Design.DataContext>
 		<vm:MainWindowViewModel/>
@@ -25,18 +26,23 @@
 			<Button Command="{Binding ExportImageCommand}">Export</Button>
 			<Button Command="{Binding ExportAllImagesCommand}">Export all</Button>
 			<Button Command="{Binding ToggleAnimationCommand}">Animate</Button>
+			<!--
 			<Button>Zoom in</Button>
 			<Button>100%</Button>
 			<Button>Zoom out</Button>
+			-->
 		</StackPanel>
 		<DockPanel Name="MainDockPanel" LastChildFill="True" DragDrop.AllowDrop="True">
-			<Panel DockPanel.Dock="Top">
-				<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}" Margin="20"/>
-				<Image ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}" Margin="20"/>
-				<Image ZIndex="20" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}" Margin="20"/>
-				<Image ZIndex="30" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}" Margin="20"/>
-				<Image ZIndex="40" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}" Margin="20"/>
-			</Panel>
+			<TextBlock Padding="0" DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+			<Viewbox Stretch="Uniform" StretchDirection="Both" Width="{Binding ImageViewWidth}">
+				<Panel DockPanel.Dock="Top">
+					<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}"/>
+					<Image ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}"/>
+					<Image ZIndex="20" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}"/>
+					<Image ZIndex="30" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}"/>
+					<Image ZIndex="40" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}"/>
+				</Panel>
+			</Viewbox>
 		</DockPanel>
 	</DockPanel>
 

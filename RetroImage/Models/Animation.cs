@@ -12,11 +12,11 @@ namespace Z80andrew.RetroImage.Models
     public class Animation
     {
         public int AnimationLayer { get; set; }
-        public AnimationDirection Direction { get; set; }
-        public float Delay { get; set; }
-        public int FrameIndex { get; set; }
+        internal AnimationDirection Direction { get; set; }
+        internal float Delay { get; set; }
+        internal int FrameIndex { get; set; }
         private int NumFrames { get; set; }
-        public Image<Rgba32>[] Frames;
+        internal Image<Rgba32>[] Frames { get; set; }
 
         internal Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
         {
@@ -67,8 +67,6 @@ namespace Z80andrew.RetroImage.Models
                 currentPalette = newPalette;
             }
 
-            GenerateAnimatedGif(frames);
-
             // Remove duplicate color data in animation frames
             for (int i = 1; i < numFrames; i++)
             {
@@ -82,28 +80,6 @@ namespace Z80andrew.RetroImage.Models
             }
 
             return frames;
-        }
-
-        internal void GenerateAnimatedGif(Image<Rgba32>[] frames)
-        {
-            var gif = frames[0];
-
-            var gifMetaData = gif.Metadata.GetGifMetadata();
-            gifMetaData.RepeatCount = 0;
-            gifMetaData.ColorTableMode = GifColorTableMode.Global;
-            gifMetaData.Comments = new List<string>() { "Made with RetroImage by z80andrew" };
-
-            GifFrameMetadata metadata = gif.Frames.RootFrame.Metadata.GetGifMetadata();
-
-            for (int i = 1; i < frames.Length; i++)
-            {
-                metadata = frames[i].Frames.RootFrame.Metadata.GetGifMetadata();
-                metadata.FrameDelay = Convert.ToInt32(Delay);
-
-                gif.Frames.AddFrame(frames[i].Frames.RootFrame);
-            }
-
-            gif.SaveAsGif(@"d:\temp\ataripics\output.gif");
         }
 
         internal void AdvanceFrame()

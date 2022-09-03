@@ -93,6 +93,20 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _animationLayer41mage, value);
         }
 
+        private string _exportPath;
+        public string ExportPath
+        {
+            get => _exportPath;
+            set => this.RaiseAndSetIfChanged(ref _exportPath, value);
+        }
+
+        private int _imageViewWidth;
+        public int ImageViewWidth
+        {
+            get => _imageViewWidth;
+            set => this.RaiseAndSetIfChanged(ref _imageViewWidth, value);
+        }
+
         public ICommand ShowNextImageCommand { get; }
         public ICommand ShowPrevImageCommand { get; }
         public ICommand ToggleAnimationCommand { get; }
@@ -104,14 +118,15 @@ namespace RetroImage.ViewModels
             _timers = new DispatcherTimer[4];
             _imageFormatService = new ImageFormatService();
             Animate = true;
+            ExportPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "export");
 
             var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
             Image<Rgba32> blankImg = (Image<Rgba32>)Image.Load(assets.Open(new Uri(@"avares://RetroImage/Assets/Images/empty.png")));
             _blankBitmap = ConvertImageToBitmap(blankImg);
 
-            SetImagePaths(new string[] { @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1" });
-            //ImagePaths = new string[] {  @"D:/Temp/AtariPics/IFF/KINGTUT.IFF" };
-            //ImagePaths = new string[] { "D:/Temp/AtariPics/TINY/DRAGON.TN1 }";
+            string startupImage = AppDomain.CurrentDomain.BaseDirectory + new Uri(@"avares://RetroImage/Assets/Images/").LocalPath;
+
+            SetImagePaths(new string[] { startupImage });
 
             ShowNextImageCommand = ReactiveCommand.Create(() =>
             {
@@ -128,9 +143,9 @@ namespace RetroImage.ViewModels
                 Animate = !Animate;
             });
 
-            ExportImageCommand = ReactiveCommand.Create(() =>
+            ExportImageCommand = ReactiveCommand.Create(async () =>
             {
-                ExportImage(_baseAtariImage);
+                await _baseAtariImage?.ExportImageToFile(ExportPath);
             });
 
             ExportAllImagesCommand = ReactiveCommand.Create(() =>
@@ -145,13 +160,13 @@ namespace RetroImage.ViewModels
                 });
         }
 
-        private void ExportAllImages(string[] imagePaths)
+        private async void ExportAllImages(string[] imagePaths)
         {
             foreach (string imagePath in imagePaths)
             {
                 var atariImage = _imageFormatService.GetImageServiceForFilePath(imagePath)?.GetImage(imagePath);
 
-                if (atariImage != null) ExportImage(atariImage);
+                if (atariImage != null) await atariImage.ExportImageToFile(ExportPath);
             }
         }
 
@@ -204,31 +219,17 @@ namespace RetroImage.ViewModels
             if (_baseAtariImage != null)
             {
                 ResetAnimations();
-
-                CurrentImageName = Path.GetFileName(imagePath);
+                SetImageLabel(imagePath, ImageIndex, ImagePaths.Length);
                 BaseImage = ConvertImageToBitmap(_baseAtariImage.Image);
+                ImageViewWidth = _baseAtariImage.Width;
 
                 InitAnimations(_baseAtariImage.Animations);
             }
         }
 
-        private static void ExportImage(AtariImageModel? atariImage)
+        private void SetImageLabel(string imagePath, int imageIndex, int numImages)
         {
-            var exportFolder = "d:\\temp\\ataripics\\export\\";
-
-            if (!Directory.Exists(exportFolder)) Directory.CreateDirectory(exportFolder);
-
-            if (atariImage != null)
-            {
-                using (var fileStream = new FileStream($"{exportFolder}{atariImage.Name}.png", FileMode.Create))
-                {
-                    var encoder = new PngEncoder();
-                    encoder.BitDepth = PngBitDepth.Bit4;
-                    encoder.ColorType = PngColorType.Palette;
-                    encoder.CompressionLevel = PngCompressionLevel.BestCompression;
-                    atariImage.Image.SaveAsPng(fileStream, encoder);
-                }
-            }
+            CurrentImageName = $"{Path.GetFileName(imagePath)} ({imageIndex+1}/{numImages})";
         }
 
         public IBitmap ConvertImageToBitmap(Image<Rgba32> inputImage)
@@ -256,7 +257,7 @@ namespace RetroImage.ViewModels
                 {
                     _timers[animation.AnimationLayer] = new DispatcherTimer()
                     {
-                        Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(animation.Delay * 2)),
+                        Interval = new TimeSpan(0, 0, 0, 0, (int)animation.Delay),
                         IsEnabled = true
                     };
 

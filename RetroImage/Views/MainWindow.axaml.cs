@@ -26,6 +26,8 @@ namespace RetroImage.Views
         {
             if (e.Key == Key.Right) ViewModel.ShowNextImageCommand.Execute(null);
             else if (e.Key == Key.Left) ViewModel.ShowPrevImageCommand.Execute(null);
+            else if (e.Key == Key.Up) ViewModel.ImageViewWidth *= 2;
+            else if (e.Key == Key.Down) ViewModel.ImageViewWidth /= 2;
         }
 
         internal void Drop(object sender, DragEventArgs e)
