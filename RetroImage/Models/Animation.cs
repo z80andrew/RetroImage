@@ -1,7 +1,11 @@
 ﻿using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
+using System;
+using System.Collections.Generic;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
+using Color = SixLabors.ImageSharp.Color;
 
 namespace Z80andrew.RetroImage.Models
 {
@@ -63,21 +67,43 @@ namespace Z80andrew.RetroImage.Models
                 currentPalette = newPalette;
             }
 
-            var animationFrames = frames;
+            GenerateAnimatedGif(frames);
 
-            for (int i = 0; i < numFrames; i++)
+            // Remove duplicate color data in animation frames
+            for (int i = 1; i < numFrames; i++)
             {
                 for (int y = 0; y < frames[i].Height; y++)
                 {
                     for (int x = 0; x < frames[i].Width; x++)
                     {
-                        if (frames[i][x, y] == frames[0][x, y]) animationFrames[i][x, y] = RGBA_TRANSPARENT;
-                        else animationFrames[i][x, y] = frames[i][x, y];
+                        if (frames[i][x, y] == frames[0][x, y]) frames[i][x, y] = RGBA_TRANSPARENT;
                     }
                 }
             }
 
-            return animationFrames;
+            return frames;
+        }
+
+        internal void GenerateAnimatedGif(Image<Rgba32>[] frames)
+        {
+            var gif = frames[0];
+
+            var gifMetaData = gif.Metadata.GetGifMetadata();
+            gifMetaData.RepeatCount = 0;
+            gifMetaData.ColorTableMode = GifColorTableMode.Global;
+            gifMetaData.Comments = new List<string>() { "Made with RetroImage by z80andrew" };
+
+            GifFrameMetadata metadata = gif.Frames.RootFrame.Metadata.GetGifMetadata();
+
+            for (int i = 1; i < frames.Length; i++)
+            {
+                metadata = frames[i].Frames.RootFrame.Metadata.GetGifMetadata();
+                metadata.FrameDelay = Convert.ToInt32(Delay);
+
+                gif.Frames.AddFrame(frames[i].Frames.RootFrame);
+            }
+
+            gif.SaveAsGif(@"d:\temp\ataripics\output.gif");
         }
 
         internal void AdvanceFrame()

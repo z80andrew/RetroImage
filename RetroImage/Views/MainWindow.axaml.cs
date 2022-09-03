@@ -3,8 +3,6 @@ using Avalonia.Input;
 using Avalonia.ReactiveUI;
 using RetroImage.ViewModels;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using Z80andrew.RetroImage.Services;
 
 namespace RetroImage.Views
@@ -28,7 +26,7 @@ namespace RetroImage.Views
             Debug.WriteLine("Drop");
             if (e.Data.Contains(DataFormats.FileNames))
             {
-                ViewModel.InitImage(e.Data.GetFileNames().First());
+                ViewModel.SetImagePaths(e.Data.GetFileNames());
             }
         }
     }

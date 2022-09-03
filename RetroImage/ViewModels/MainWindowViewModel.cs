@@ -7,10 +7,11 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Timers;
+using System.Windows.Input;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
 using Animation = Z80andrew.RetroImage.Models.Animation;
@@ -20,46 +21,30 @@ namespace RetroImage.ViewModels
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         private DispatcherTimer[] _timers;
-        public string ImagePath => @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1";
-        //public string ImagePath => @"D:/Temp/AtariPics/IFF/KINGTUT.IFF";
-        //public string ImagePath => @"D:/Temp/AtariPics/TINY/DRAGON.TN1";
+
         private IBitmap _blankBitmap;
 
         private ImageFormatService _imageFormatService;
-
-        private bool _isAnimationLayer1Visible;
-        public bool IsAnimationLayer1Visible
-        {
-            get => _isAnimationLayer1Visible;
-            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer1Visible, value);
-        }
-
-        private bool _isAnimationLayer2Visible;
-        public bool IsAnimationLayer2Visible
-        {
-            get => _isAnimationLayer2Visible;
-            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer2Visible, value);
-        }
-
-        private bool _isAnimationLayer3Visible;
-        public bool IsAnimationLayer3Visible
-        {
-            get => _isAnimationLayer3Visible;
-            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer3Visible, value);
-        }
-
-        private bool _isAnimationLayer4Visible;
-        public bool IsAnimationLayer4Visible
-        {
-            get => _isAnimationLayer1Visible;
-            set => this.RaiseAndSetIfChanged(ref _isAnimationLayer4Visible, value);
-        }
 
         private bool _animate;
         public bool Animate
         {
             get => _animate;
             set => this.RaiseAndSetIfChanged(ref _animate, value);
+        }
+
+        private string[] _imagePaths;
+        public string[] ImagePaths
+        {
+            get => _imagePaths;
+            set => this.RaiseAndSetIfChanged(ref _imagePaths, value);
+        }
+
+        private int _imageIndex;
+        public int ImageIndex
+        {
+            get => _imageIndex;
+            set => this.RaiseAndSetIfChanged(ref _imageIndex, value);
         }
 
         private string _currentImageName;
@@ -104,16 +89,60 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _animationLayer41mage, value);
         }
 
+        public ICommand ShowNextImageCommand { get; }
+        public ICommand ShowPrevImageCommand { get; }
+
         public MainWindowViewModel()
         {
             _timers = new DispatcherTimer[4];
             _imageFormatService = new ImageFormatService();
-            InitImage(ImagePath);
             Animate = true;
 
             var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
             Image<Rgba32> blankImg = (Image<Rgba32>)Image.Load(assets.Open(new Uri(@"avares://RetroImage/Assets/Images/empty.png")));
             _blankBitmap = ConvertImageToBitmap(blankImg);
+
+            SetImagePaths(new string[] { @"D:/Temp/AtariPics/DEGAS/MAGICMTN.PC1" });
+            //ImagePaths = new string[] {  @"D:/Temp/AtariPics/IFF/KINGTUT.IFF" };
+            //ImagePaths = new string[] { "D:/Temp/AtariPics/TINY/DRAGON.TN1 }";
+
+            ShowNextImageCommand = ReactiveCommand.Create(() =>
+            {
+                ImageIndex = ImageIndex == ImagePaths.Length - 1 ? 0 : ImageIndex + 1;
+            });
+
+            ShowPrevImageCommand = ReactiveCommand.Create(() =>
+            {
+                ImageIndex = ImageIndex == 0 ? ImagePaths.Length - 1 : ImageIndex - 1;
+            });
+
+            this.WhenAnyValue(model => model.ImageIndex)
+                .Subscribe(index =>
+                {
+                    InitImage(ImagePaths[index]);
+                });
+        }
+
+        internal void SetImagePaths(IEnumerable<string> paths)
+        {
+            var imagePaths = new List<string>();
+
+            foreach (string path in paths)
+            {
+                if (File.Exists(path)) imagePaths.Add(path);
+
+                else if (Directory.Exists(path))
+                {
+                    foreach (var filePath in Directory.GetFiles(path))
+                    {
+                        imagePaths.Add(filePath);
+                    }
+                }
+            }
+
+            ImagePaths = imagePaths.ToArray();
+
+            if (ImagePaths.Length > 0) InitImage(ImagePaths[0]);
         }
 
         private void ResetAnimations()
@@ -131,13 +160,26 @@ namespace RetroImage.ViewModels
 
         internal void InitImage(string imagePath)
         {
-            ResetAnimations();
+            var atariImage = _imageFormatService.GetImageServiceForFileExtension(imagePath)?.GetImage(imagePath);
 
-            var atariImage = _imageFormatService.GetImageServiceForFileExtension(imagePath).GetImage(imagePath);
-            CurrentImageName = Path.GetFileName(imagePath);
-            BaseImage = ConvertImageToBitmap(atariImage.Image);
+            if (atariImage != null)
+            {
+                ResetAnimations();
 
-            InitAnimations(atariImage.Animations);
+                CurrentImageName = Path.GetFileName(imagePath);
+                BaseImage = ConvertImageToBitmap(atariImage.Image);
+
+                using (var fileStream = new FileStream(@"d:\temp\ataripics\output.png", FileMode.Create))
+                {
+                    var encoder = new PngEncoder();
+                    encoder.BitDepth = PngBitDepth.Bit4;
+                    encoder.ColorType = PngColorType.Palette;
+                    encoder.CompressionLevel = PngCompressionLevel.BestCompression;
+                    atariImage.Image.SaveAsPng(fileStream, encoder);
+                }
+
+                InitAnimations(atariImage.Animations);
+            }
         }
 
         public IBitmap ConvertImageToBitmap(Image<Rgba32> inputImage)
@@ -165,7 +207,7 @@ namespace RetroImage.ViewModels
                 {
                     _timers[animation.AnimationLayer] = new DispatcherTimer()
                     {
-                        Interval = new TimeSpan(0,0,0,0,(int)animation.Delay),
+                        Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(animation.Delay * 2)),
                         IsEnabled = true
                     };
 

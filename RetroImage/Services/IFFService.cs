@@ -169,7 +169,7 @@ namespace Z80andrew.RetroImage.Services
             {
                 imageFileStream.Seek(animOffset + 12, SeekOrigin.Begin);
                 var animationEnabled = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-                
+
                 if (animationEnabled == 1)
                 {
                     imageFileStream.Seek(-4, SeekOrigin.Current);
@@ -177,7 +177,7 @@ namespace Z80andrew.RetroImage.Services
 
                     if (animationSpeed != 0)
                     {
-                        var animationDelay = (float)1000/60 * (16384 / animationSpeed);
+                        var animationDelay = (float)1000 / 60 * (16384 / animationSpeed);
 
                         imageFileStream.Seek(2, SeekOrigin.Current);
                         var lowerLimit = imageFileStream.ReadByte();
