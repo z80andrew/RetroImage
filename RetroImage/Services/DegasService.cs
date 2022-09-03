@@ -10,6 +10,7 @@ namespace Z80andrew.RetroImage.Services
 {
     internal class DegasService : AtariImageService
     {
+        internal byte RESOLUTION_OFFSET;
         internal byte PALETTE_OFFSET;
         internal byte BODY_OFFSET;
         internal byte MAX_ANIMATIONS;
@@ -21,6 +22,7 @@ namespace Z80andrew.RetroImage.Services
 
         internal virtual void Init()
         {
+            RESOLUTION_OFFSET = 0x01;
             PALETTE_OFFSET = 0x02;
             BODY_OFFSET = 0x22;
             MAX_ANIMATIONS = 0x04;
@@ -36,7 +38,7 @@ namespace Z80andrew.RetroImage.Services
 
         internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
         {
-            imageFileStream.Seek(1, SeekOrigin.Begin);
+            imageFileStream.Seek(RESOLUTION_OFFSET, SeekOrigin.Begin);
             var resolution = (Resolution)imageFileStream.ReadByte();
 
             int width = -1;

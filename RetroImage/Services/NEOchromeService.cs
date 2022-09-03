@@ -13,6 +13,7 @@ namespace Z80andrew.RetroImage.Services
         private int ANIMATION_OFFSET = 0x30;
         internal override void Init()
         {
+            RESOLUTION_OFFSET = 0x03;
             PALETTE_OFFSET = 0x04;
             BODY_OFFSET = 0x80;
             MAX_ANIMATIONS = 0x04;
