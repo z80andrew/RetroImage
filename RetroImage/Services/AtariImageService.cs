@@ -3,7 +3,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.IO;
 using Z80andrew.RetroImage.Common;
-using Z80andrew.RetroImage.Interfaces;
 using Z80andrew.RetroImage.Models;
 using static Z80andrew.RetroImage.Common.Constants;
 
@@ -18,9 +17,9 @@ namespace Z80andrew.RetroImage.Services
         internal abstract (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream);
         internal abstract Color[] GetPalette(FileStream imageFileStream, int bitPlanes);
 
-        internal IAtariImage GetImage(string path)
+        internal AtariImageModel GetImage(string path)
         {
-            IAtariImage atariImage;
+            AtariImageModel atariImage;
 
             using (FileStream imageFileStream = File.OpenRead(path))
             {
@@ -39,8 +38,9 @@ namespace Z80andrew.RetroImage.Services
                     animations = GetAnimations(imageFileStream, imageBody, width, height, resolution, bitPlanes, palette);
                 }
 
-                atariImage = new DegasImageModel()
+                atariImage = new AtariImageModel()
                 {
+                    Name = Path.GetFileNameWithoutExtension(path),
                     Width = width,
                     Height = height,
                     Resolution = resolution,

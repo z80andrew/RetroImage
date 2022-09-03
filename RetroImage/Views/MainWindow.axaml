@@ -22,9 +22,9 @@
 			<Button>Load</Button>
 			<Button Command="{Binding ShowPrevImageCommand}">Previous</Button>
 			<Button Command="{Binding ShowNextImageCommand}">Next</Button>
-			<Button>Export</Button>
-			<Button>Export all</Button>
-			<Button>Animate</Button>
+			<Button Command="{Binding ExportImageCommand}">Export</Button>
+			<Button Command="{Binding ExportAllImagesCommand}">Export all</Button>
+			<Button Command="{Binding ToggleAnimationCommand}">Animate</Button>
 			<Button>Zoom in</Button>
 			<Button>100%</Button>
 			<Button>Zoom out</Button>

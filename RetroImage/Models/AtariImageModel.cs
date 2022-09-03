@@ -1,12 +1,12 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Z80andrew.RetroImage.Interfaces;
 using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Models
 {
-    public class DegasImageModel : IAtariImage
+    public class AtariImageModel
     {
+        public string Name { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public CompressionType Compression { get; set; }

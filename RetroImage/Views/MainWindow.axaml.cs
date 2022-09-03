@@ -19,6 +19,13 @@ namespace RetroImage.Views
             var logScrollViewer = this.FindControl<DockPanel>("MainDockPanel");
 
             AddHandler(DragDrop.DropEvent, Drop);
+            AddHandler(KeyDownEvent, KeyboardEvent);
+        }
+
+        private void KeyboardEvent(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Right) ViewModel.ShowNextImageCommand.Execute(null);
+            else if (e.Key == Key.Left) ViewModel.ShowPrevImageCommand.Execute(null);
         }
 
         internal void Drop(object sender, DragEventArgs e)

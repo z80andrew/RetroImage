@@ -1,40 +1,42 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 
 namespace Z80andrew.RetroImage.Services
 {
     internal class ImageFormatService
     {
-        internal AtariImageService GetImageServiceForFileExtension(string filePath)
+        private static AtariImageService _neochromeService = new NEOchromeService();
+        private static AtariImageService _degasService = new DegasService();
+        private static AtariImageService _doodleService = new DoodleService();
+        private static AtariImageService _iffService = new IFFService();
+        private static AtariImageService _tinyService = new TinyService();
+
+        public Dictionary<string, AtariImageService> fileExtensionServices = new()
+        {
+            {".NEO", _neochromeService},
+            {".PI1", _degasService},
+            {".PI2", _degasService},
+            {".PI3", _degasService},
+            {".PC1", _degasService},
+            {".PC2", _degasService},
+            {".PC3", _degasService},
+            {".PIC", _degasService},
+            {".DOO", _doodleService},
+            {".IFF", _iffService},
+            {".TNY", _tinyService},
+            {".TN1", _tinyService},
+            {".TN2", _tinyService},
+            {".TN3", _tinyService}
+            //{".TN4", _tinyService}
+        };
+
+        internal AtariImageService GetImageServiceForFilePath(string filePath)
         {
             AtariImageService imageService = null;
 
-            switch (Path.GetExtension(filePath.ToUpper()))
-            {
-                case ".NEO":
-                    imageService = new NEOchromeService();
-                    break;
-                case ".PI1":
-                case ".PI2":
-                case ".PI3":
-                case ".PC1":
-                case ".PC2":
-                case ".PC3":
-                case ".PIC":
-                    imageService = new DegasService();
-                    break;
-                case ".DOO":
-                    imageService = new DoodleService();
-                    break;
-                case ".IFF":
-                    imageService = new IFFService();
-                    break;
-                case ".TNY":
-                case ".TN1":
-                case ".TN2":
-                case ".TN3":
-                    imageService = new TinyService();
-                    break;
-            }
+            var extension = Path.GetExtension(filePath).ToUpper();
+
+            fileExtensionServices.TryGetValue(extension, out imageService);
 
             return imageService;
         }
