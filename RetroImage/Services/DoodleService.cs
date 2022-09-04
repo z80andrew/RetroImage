@@ -12,7 +12,7 @@ namespace Z80andrew.RetroImage.Services
             MAX_ANIMATIONS = 0x00;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
         {
             var resolution = Resolution.HIGH;
             int width = 640;
@@ -22,12 +22,12 @@ namespace Z80andrew.RetroImage.Services
             return (resolution, width, height, bitPlanes);
         }
 
-        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
         {
             return false;
         }
 
-        internal override CompressionType GetCompressionType(FileStream imageFileStream)
+        internal override CompressionType GetCompressionType(Stream imageStream)
         {
             return CompressionType.NONE;
         }

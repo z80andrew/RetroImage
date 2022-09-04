@@ -20,38 +20,38 @@ namespace Z80andrew.RetroImage.Services
         private const string CHUNK_ID_BODY = "BODY";
         private const string CHUNK_ID_VERTICAL_DATA = "VDAT";
 
-        internal override CompressionType GetCompressionType(FileStream imageFileStream)
+        internal override CompressionType GetCompressionType(Stream imageStream)
         {
-            var headerOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BITMAP_HEADER);
-            imageFileStream.Seek(headerOffset + 18, SeekOrigin.Begin);
-            var compression = (CompressionType)imageFileStream.ReadByte();
+            var headerOffset = GetChunkOffset(imageStream, CHUNK_ID_BITMAP_HEADER);
+            imageStream.Seek(headerOffset + 18, SeekOrigin.Begin);
+            var compression = (CompressionType)imageStream.ReadByte();
 
             return compression;
         }
 
-        internal override (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
+        internal override (int, byte[]) GetImageBody(Stream imageStream, CompressionType compression, int width, int height, int bitPlanes)
         {
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
 
-            var bodyOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BODY);
-            imageFileStream.Seek(bodyOffset, SeekOrigin.Begin);
+            var bodyOffset = GetChunkOffset(imageStream, CHUNK_ID_BODY);
+            imageStream.Seek(bodyOffset, SeekOrigin.Begin);
 
-            imageFileStream.Read(imageBytes, 0, imageBytes.Length);
+            imageStream.Read(imageBytes, 0, imageBytes.Length);
             int bytesRead = (width * height * bitPlanes) / 8;
 
             if (compression == CompressionType.PACKBITS)
             {
-                var vdatOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BODY, 0);
-                imageFileStream.Seek(vdatOffset, SeekOrigin.Begin);
+                var vdatOffset = GetChunkOffset(imageStream, CHUNK_ID_BODY, 0);
+                imageStream.Seek(vdatOffset, SeekOrigin.Begin);
 
-                imageFileStream.Seek(4, SeekOrigin.Current);
+                imageStream.Seek(4, SeekOrigin.Current);
 
-                var chunkLength = (Convert.ToByte(imageFileStream.ReadByte()) << 24
-                    | Convert.ToByte(imageFileStream.ReadByte()) << 16
-                    | Convert.ToByte(imageFileStream.ReadByte()) << 8
-                    | Convert.ToByte(imageFileStream.ReadByte()));
+                var chunkLength = (Convert.ToByte(imageStream.ReadByte()) << 24
+                    | Convert.ToByte(imageStream.ReadByte()) << 16
+                    | Convert.ToByte(imageStream.ReadByte()) << 8
+                    | Convert.ToByte(imageStream.ReadByte()));
 
-                imageFileStream.Read(imageBytes, 0, chunkLength);
+                imageStream.Read(imageBytes, 0, chunkLength);
 
                 (bytesRead, byte[] uncompressedImage) = Compression.DecompressPackBits(imageBytes);
                 imageBytes = Compression.InterleavePlanes(uncompressedImage, width, bitPlanes);
@@ -62,31 +62,31 @@ namespace Z80andrew.RetroImage.Services
                 var verticalRleData = new VerticalRleModel[bitPlanes];
 
                 int vdatChunkOffset = 0;
-                var vdatOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_VERTICAL_DATA, vdatChunkOffset);
-                imageFileStream.Seek(vdatOffset, SeekOrigin.Begin);
+                var vdatOffset = GetChunkOffset(imageStream, CHUNK_ID_VERTICAL_DATA, vdatChunkOffset);
+                imageStream.Seek(vdatOffset, SeekOrigin.Begin);
 
                 for (int bitPlane = 0; bitPlane < bitPlanes; bitPlane++)
                 {
                     // Move past chunk ID
-                    imageFileStream.Seek(4, SeekOrigin.Current);
+                    imageStream.Seek(4, SeekOrigin.Current);
 
-                    var chunkLength = (Convert.ToByte(imageFileStream.ReadByte()) << 24
-                        | Convert.ToByte(imageFileStream.ReadByte()) << 16
-                        | Convert.ToByte(imageFileStream.ReadByte()) << 8
-                        | Convert.ToByte(imageFileStream.ReadByte()));
+                    var chunkLength = (Convert.ToByte(imageStream.ReadByte()) << 24
+                        | Convert.ToByte(imageStream.ReadByte()) << 16
+                        | Convert.ToByte(imageStream.ReadByte()) << 8
+                        | Convert.ToByte(imageStream.ReadByte()));
 
                     chunkLength -= 4;
 
                     // Number of command bytes read is always 2 more than actually available
-                    var numCommandBytes = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte() - 2;
+                    var numCommandBytes = imageStream.ReadByte() << 8 | imageStream.ReadByte() - 2;
 
                     var commandBytes = new byte[numCommandBytes];
-                    imageFileStream.Read(commandBytes, 0, numCommandBytes);
+                    imageStream.Read(commandBytes, 0, numCommandBytes);
 
                     var numDataBytes = chunkLength - numCommandBytes + 2;
 
                     var dataBytes = new byte[numDataBytes];
-                    imageFileStream.Read(dataBytes, 0, numDataBytes);
+                    imageStream.Read(dataBytes, 0, numDataBytes);
 
                     verticalRleData[bitPlane] = new VerticalRleModel() { CommandBytes = commandBytes, DataBytes = dataBytes };
                 }
@@ -98,16 +98,16 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
         {
-            var headerOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_BITMAP_HEADER);
+            var headerOffset = GetChunkOffset(imageStream, CHUNK_ID_BITMAP_HEADER);
 
-            imageFileStream.Seek(headerOffset + 8, SeekOrigin.Begin);
+            imageStream.Seek(headerOffset + 8, SeekOrigin.Begin);
 
-            int width = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-            int height = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-            imageFileStream.Seek(4, SeekOrigin.Current);
-            int bitPlanes = imageFileStream.ReadByte();
+            int width = imageStream.ReadByte() << 8 | imageStream.ReadByte();
+            int height = imageStream.ReadByte() << 8 | imageStream.ReadByte();
+            imageStream.Seek(4, SeekOrigin.Current);
+            int bitPlanes = imageStream.ReadByte();
 
             var resolution = Resolution.LOW;
 
@@ -120,24 +120,24 @@ namespace Z80andrew.RetroImage.Services
             return (resolution, width, height, bitPlanes);
         }
 
-        internal override Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
+        internal override Color[] GetPalette(Stream imageStream, int bitPlanes)
         {
-            var paletteOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLORMAP);
+            var paletteOffset = GetChunkOffset(imageStream, CHUNK_ID_COLORMAP);
 
             // Offset + chunk header + first 3 bytes of longword
-            imageFileStream.Seek(paletteOffset + 4 + 3, SeekOrigin.Begin);
+            imageStream.Seek(paletteOffset + 4 + 3, SeekOrigin.Begin);
 
             // Number of colors is length of chunk div 3-component RGB
-            var numColors = imageFileStream.ReadByte() / 3;
+            var numColors = imageStream.ReadByte() / 3;
 
             var colors = new Color[numColors];
 
             for (int cIndex = 0; cIndex < colors.Length; cIndex++)
             {
                 // RGB are stored as 3-bit values, i.e. there are 7 possible RGB levels
-                var r = Convert.ToByte(imageFileStream.ReadByte());
-                var g = Convert.ToByte(imageFileStream.ReadByte());
-                var b = Convert.ToByte(imageFileStream.ReadByte());
+                var r = Convert.ToByte(imageStream.ReadByte());
+                var g = Convert.ToByte(imageStream.ReadByte());
+                var b = Convert.ToByte(imageStream.ReadByte());
 
                 colors[cIndex] = Color.FromRgb(r, g, b);
             }
@@ -145,43 +145,43 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
         {
             var hasAnimations = false;
-            var animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE);
+            var animOffset = GetChunkOffset(imageStream, CHUNK_ID_COLOR_RANGE);
 
             if (animOffset != -1)
             {
-                imageFileStream.Seek(animOffset + 12, SeekOrigin.Begin);
-                var animationEnabled = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                imageStream.Seek(animOffset + 12, SeekOrigin.Begin);
+                var animationEnabled = imageStream.ReadByte() << 8 | imageStream.ReadByte();
                 if (animationEnabled == 1) hasAnimations = true;
             }
 
             return hasAnimations;
         }
 
-        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>(0);
-            var animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE);
+            var animOffset = GetChunkOffset(imageStream, CHUNK_ID_COLOR_RANGE);
 
             while (animOffset != -1)
             {
-                imageFileStream.Seek(animOffset + 12, SeekOrigin.Begin);
-                var animationEnabled = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                imageStream.Seek(animOffset + 12, SeekOrigin.Begin);
+                var animationEnabled = imageStream.ReadByte() << 8 | imageStream.ReadByte();
 
                 if (animationEnabled == 1)
                 {
-                    imageFileStream.Seek(-4, SeekOrigin.Current);
-                    var animationSpeed = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                    imageStream.Seek(-4, SeekOrigin.Current);
+                    var animationSpeed = imageStream.ReadByte() << 8 | imageStream.ReadByte();
 
                     if (animationSpeed != 0)
                     {
                         var animationDelay = (float)1000 / 60 * (16384 / animationSpeed);
 
-                        imageFileStream.Seek(2, SeekOrigin.Current);
-                        var lowerLimit = imageFileStream.ReadByte();
-                        var upperLimit = imageFileStream.ReadByte();
+                        imageStream.Seek(2, SeekOrigin.Current);
+                        var lowerLimit = imageStream.ReadByte();
+                        var upperLimit = imageStream.ReadByte();
 
                         animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerLimit, upperLimit, 0)
                         {
@@ -190,21 +190,29 @@ namespace Z80andrew.RetroImage.Services
                         });
                     }
 
-                    animOffset = GetChunkOffset(imageFileStream.Name, CHUNK_ID_COLOR_RANGE, (int)imageFileStream.Position);
+                    animOffset = GetChunkOffset(imageStream, CHUNK_ID_COLOR_RANGE, (int)imageStream.Position);
                 }
             }
 
             return animations.ToArray();
         }
 
-        private int GetChunkOffset(string filePath, string chunkID, int startIndex = 0)
+        private int GetChunkOffset(Stream imageStream, string chunkID, int startIndex = 0)
         {
             int chunkOffset = -1;
 
-            using (TextReader reader = new StreamReader(filePath, Encoding.ASCII))
+            // TODO: Make this independent of TextReader
+            using (var stream = new MemoryStream())
             {
-                var fileContents = reader.ReadToEnd();
-                chunkOffset = fileContents.IndexOf(chunkID, startIndex);
+                imageStream.Position = 0;
+                imageStream.CopyTo(stream);
+                stream.Position = 0;
+
+                using (TextReader reader = new StreamReader(stream, Encoding.ASCII))
+                {
+                    var fileContents = reader.ReadToEnd();
+                    chunkOffset = fileContents.IndexOf(chunkID, startIndex);
+                }
             }
 
             return chunkOffset;

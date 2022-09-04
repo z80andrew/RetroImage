@@ -11,14 +11,13 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <None Remove=".gitignore" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Assets\Images\MAGICMTN.PC1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\Images\SONIC.PI1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Remove="Assets\Icons\folder.png" />
+    <None Remove="Assets\Icons\next.png" />
+    <None Remove="Assets\Icons\pause-button.png" />
+    <None Remove="Assets\Icons\play-button.png" />
+    <None Remove="Assets\Icons\sending.png" />
+    <None Remove="Assets\Icons\zoom-in.png" />
+    <None Remove="Assets\Icons\zoom-out.png" />
   </ItemGroup>
   <ItemGroup>
     <!--This helps with theme dll-s trimming.
@@ -39,4 +38,7 @@
   <ItemGroup>
     <Folder Include="Interfaces\" />
   </ItemGroup>
+	<PropertyGroup>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	</PropertyGroup>
 </Project>

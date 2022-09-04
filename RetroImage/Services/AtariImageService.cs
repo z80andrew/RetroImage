@@ -10,48 +10,54 @@ namespace Z80andrew.RetroImage.Services
 {
     internal abstract class AtariImageService
     {
-        internal abstract (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes);
-        internal abstract Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette);
-        internal abstract bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes);
-        internal abstract CompressionType GetCompressionType(FileStream imageFileStream);
-        internal abstract (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream);
-        internal abstract Color[] GetPalette(FileStream imageFileStream, int bitPlanes);
+        internal abstract (int, byte[]) GetImageBody(Stream imageStream, CompressionType compression, int width, int height, int bitPlanes);
+        internal abstract Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette);
+        internal abstract bool ImageHasAnimationData(Stream imageStream, int bodyBytes);
+        internal abstract CompressionType GetCompressionType(Stream imageStream);
+        internal abstract (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream);
+        internal abstract Color[] GetPalette(Stream imageStream, int bitPlanes);
 
         internal AtariImageModel GetImage(string path)
         {
             AtariImageModel atariImage;
-
-            using (FileStream imageFileStream = File.OpenRead(path))
+            
+            using (Stream imageStream = File.OpenRead(path))
             {
-                var compression = GetCompressionType(imageFileStream);
-
-                (var resolution, var width, var height, var bitPlanes) = GetImageProperties(imageFileStream);
-
-                (var fileBodyByteCount, var imageBody) = GetImageBody(imageFileStream, compression, width, height, bitPlanes);
-                var palette = GetPalette(imageFileStream, bitPlanes);
-                var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
-
-                var animations = new Animation[0];
-
-                if (ImageHasAnimationData(imageFileStream, fileBodyByteCount))
-                {
-                    animations = GetAnimations(imageFileStream, imageBody, width, height, resolution, bitPlanes, palette);
-                }
-
-                atariImage = new AtariImageModel()
-                {
-                    Name = Path.GetFileNameWithoutExtension(path),
-                    Width = width,
-                    Height = height,
-                    Resolution = resolution,
-                    Compression = compression,
-                    NumBitPlanes = bitPlanes,
-                    Palette = palette,
-                    Image = degasImage,
-                    RawData = imageBody,
-                    Animations = animations
-                };
+                atariImage = GetImage(imageStream, path);
             }
+
+            return atariImage;
+        }
+
+        internal AtariImageModel GetImage(Stream imageStream, string fileName)
+        {
+            (var resolution, var width, var height, var bitPlanes) = GetImageProperties(imageStream);
+
+            var compression = GetCompressionType(imageStream);
+            var palette = GetPalette(imageStream, bitPlanes);
+            (var fileBodyByteCount, var imageBody) = GetImageBody(imageStream, compression, width, height, bitPlanes);
+            var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
+
+            var animations = new Animation[0];
+
+            if (ImageHasAnimationData(imageStream, fileBodyByteCount))
+            {
+                animations = GetAnimations(imageStream, imageBody, width, height, resolution, bitPlanes, palette);
+            }
+
+            var atariImage = new AtariImageModel()
+            {
+                Name = Path.GetFileNameWithoutExtension(fileName),
+                Width = width,
+                Height = height,
+                Resolution = resolution,
+                Compression = compression,
+                NumBitPlanes = bitPlanes,
+                Palette = palette,
+                Image = degasImage,
+                RawData = imageBody,
+                Animations = animations
+            };
 
             return atariImage;
         }

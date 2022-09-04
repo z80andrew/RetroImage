@@ -28,18 +28,18 @@ namespace Z80andrew.RetroImage.Services
             MAX_ANIMATIONS = 0x04;
         }
 
-        internal override CompressionType GetCompressionType(FileStream imageFileStream)
+        internal override CompressionType GetCompressionType(Stream imageStream)
         {
-            imageFileStream.Seek(0, SeekOrigin.Begin);
-            var compression = imageFileStream.ReadByte();
+            imageStream.Seek(0, SeekOrigin.Begin);
+            var compression = imageStream.ReadByte();
 
             return (compression & 0x80) == 0x80 ? CompressionType.PACKBITS : CompressionType.NONE;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
         {
-            imageFileStream.Seek(RESOLUTION_OFFSET, SeekOrigin.Begin);
-            var resolution = (Resolution)imageFileStream.ReadByte();
+            imageStream.Seek(RESOLUTION_OFFSET, SeekOrigin.Begin);
+            var resolution = (Resolution)imageStream.ReadByte();
 
             int width = -1;
             int height = -1;
@@ -67,17 +67,17 @@ namespace Z80andrew.RetroImage.Services
             return (resolution, width, height, bitPlanes);
         }
 
-        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
         {
             bool hasValidAnimationData = true;
-            imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
-            imageFileStream.Seek(bodyBytes, SeekOrigin.Current);
+            imageStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
+            imageStream.Seek(bodyBytes, SeekOrigin.Current);
             int maxAnimationBytes = 0x20;
             bool EOF = false;
 
             while (!EOF)
             {
-                var fileByte = imageFileStream.ReadByte();
+                var fileByte = imageStream.ReadByte();
 
                 // Valid EOF with animations
                 if (fileByte == -1 && maxAnimationBytes == 0) EOF = true;
@@ -96,11 +96,11 @@ namespace Z80andrew.RetroImage.Services
             return hasValidAnimationData;
         }
 
-        internal override (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
+        internal override (int, byte[]) GetImageBody(Stream imageStream, CompressionType compression, int width, int height, int bitPlanes)
         {
-            imageFileStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
+            imageStream.Seek(BODY_OFFSET, SeekOrigin.Begin);
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
-            imageFileStream.Read(imageBytes, 0, imageBytes.Length);
+            imageStream.Read(imageBytes, 0, imageBytes.Length);
             int bytesRead = SCREEN_MEMORY_BYTES;
 
             if (compression == CompressionType.PACKBITS)
@@ -112,15 +112,15 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        internal override Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
+        internal override Color[] GetPalette(Stream imageStream, int bitPlanes)
         {
             var colors = new Color[(int)Math.Pow(2, bitPlanes)];
 
-            imageFileStream.Seek(PALETTE_OFFSET, SeekOrigin.Begin);
+            imageStream.Seek(PALETTE_OFFSET, SeekOrigin.Begin);
 
             for (int cIndex = 0; cIndex < colors.Length; cIndex++)
             {
-                int v = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                int v = imageStream.ReadByte() << 8 | imageStream.ReadByte();
                 // RGB are stored as 3-bit values, i.e. there are 7 possible RGB levels
                 var b = Convert.ToByte(((v >> 0) & 0x07) * (255 / 7));
                 var g = Convert.ToByte(((v >> 4) & 0x07) * (255 / 7));
@@ -132,25 +132,25 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
             for (int animationIndex = 0; animationIndex < MAX_ANIMATIONS; animationIndex++)
             {
-                imageFileStream.Seek(-0x20 + (animationIndex * 2), SeekOrigin.End);
+                imageStream.Seek(imageStream.Length - 0x20 + (animationIndex * 2), SeekOrigin.Begin);
 
-                imageFileStream.Seek(1, SeekOrigin.Current);
-                var lowerPaletteIndex = imageFileStream.ReadByte();
+                imageStream.Seek(1, SeekOrigin.Current);
+                var lowerPaletteIndex = imageStream.ReadByte();
 
-                imageFileStream.Seek(7, SeekOrigin.Current);
-                var upperPaletteIndex = imageFileStream.ReadByte();
+                imageStream.Seek(7, SeekOrigin.Current);
+                var upperPaletteIndex = imageStream.ReadByte();
 
-                imageFileStream.Seek(7, SeekOrigin.Current);
-                var animationDirection = (AnimationDirection)imageFileStream.ReadByte();
+                imageStream.Seek(7, SeekOrigin.Current);
+                var animationDirection = (AnimationDirection)imageStream.ReadByte();
 
-                imageFileStream.Seek(7, SeekOrigin.Current);
-                var animationDelay = imageFileStream.ReadByte();
+                imageStream.Seek(7, SeekOrigin.Current);
+                var animationDelay = imageStream.ReadByte();
 
                 if (animationDirection != AnimationDirection.None)
                 {

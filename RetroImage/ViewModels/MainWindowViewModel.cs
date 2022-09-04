@@ -107,6 +107,13 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _imageViewWidth, value);
         }
 
+        private int _imageZoom;
+        public int ImageZoom
+        {
+            get => _imageZoom;
+            set => this.RaiseAndSetIfChanged(ref _imageZoom, value);
+        }
+
         public ICommand ShowNextImageCommand { get; }
         public ICommand ShowPrevImageCommand { get; }
         public ICommand ToggleAnimationCommand { get; }
@@ -124,9 +131,9 @@ namespace RetroImage.ViewModels
             Image<Rgba32> blankImg = (Image<Rgba32>)Image.Load(assets.Open(new Uri(@"avares://RetroImage/Assets/Images/empty.png")));
             _blankBitmap = ConvertImageToBitmap(blankImg);
 
-            string startupImage = AppDomain.CurrentDomain.BaseDirectory + new Uri(@"avares://RetroImage/Assets/Images/").LocalPath;
-
-            SetImagePaths(new string[] { startupImage });
+            //SetImagePaths(new string[] { "" });
+            ImagePaths = new string[] {""} ;
+            ImageIndex = 0;
 
             ShowNextImageCommand = ReactiveCommand.Create(() =>
             {
@@ -158,6 +165,19 @@ namespace RetroImage.ViewModels
                 {
                     InitImage(ImagePaths[index]);
                 });
+
+            this.WhenAnyValue(model => model.ImageZoom)
+                .Subscribe(index =>
+                {
+                    ImageViewWidth = _baseAtariImage == null ? 320 : _baseAtariImage.Width * ImageZoom;
+                });
+
+            var startupImageUri = @"avares://RetroImage/Assets/Images/MAGICMTN.PC1";
+
+            using (var imageStream = assets.Open(new Uri(startupImageUri)))
+            {
+                InitImage(imageStream, startupImageUri);
+            }
         }
 
         private async void ExportAllImages(string[] imagePaths)
@@ -212,6 +232,14 @@ namespace RetroImage.ViewModels
             }
         }
 
+        private void InitImage(Stream imageStream, string imageName)
+        {
+            _baseAtariImage = _imageFormatService.GetImageServiceForFilePath(imageName)?.GetImage(imageStream, imageName);
+            BaseImage = ConvertImageToBitmap(_baseAtariImage.Image);
+            ImageZoom = _baseAtariImage.Width < 640 ? 2 : 1;
+            InitAnimations(_baseAtariImage.Animations);
+        }
+
         internal void InitImage(string imagePath)
         {
             _baseAtariImage = _imageFormatService.GetImageServiceForFilePath(imagePath)?.GetImage(imagePath);
@@ -221,7 +249,7 @@ namespace RetroImage.ViewModels
                 ResetAnimations();
                 SetImageLabel(imagePath, ImageIndex, ImagePaths.Length);
                 BaseImage = ConvertImageToBitmap(_baseAtariImage.Image);
-                ImageViewWidth = _baseAtariImage.Width;
+                ImageZoom = _baseAtariImage.Width < 640 ? 2 : 1;
 
                 InitAnimations(_baseAtariImage.Animations);
             }

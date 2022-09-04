@@ -25,20 +25,20 @@ namespace Z80andrew.RetroImage.Services
             MAX_ANIMATIONS = 0x01;
         }
 
-        internal override (int, byte[]) GetImageBody(FileStream imageFileStream, CompressionType compression, int width, int height, int bitPlanes)
+        internal override (int, byte[]) GetImageBody(Stream imageStream, CompressionType compression, int width, int height, int bitPlanes)
         {
             byte[] imageBytes = new byte[(width * height) / (8 / bitPlanes)];
 
-            imageFileStream.Position = BODY_OFFSET;
+            imageStream.Position = BODY_OFFSET;
 
-            var numControlBytes = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
-            var numDataWords = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+            var numControlBytes = imageStream.ReadByte() << 8 | imageStream.ReadByte();
+            var numDataWords = imageStream.ReadByte() << 8 | imageStream.ReadByte();
 
             var commandBytes = new byte[numControlBytes];
-            imageFileStream.Read(commandBytes, 0, numControlBytes);
+            imageStream.Read(commandBytes, 0, numControlBytes);
 
             var dataBytes = new byte[numDataWords * 2];
-            imageFileStream.Read(dataBytes, 0, numDataWords * 2);
+            imageStream.Read(dataBytes, 0, numDataWords * 2);
 
             // Tiny always uses vertical RLE compression
             imageBytes = Compression.DecompressVerticalRLE(commandBytes, dataBytes);
@@ -46,18 +46,18 @@ namespace Z80andrew.RetroImage.Services
             // Tiny treats every image as low resolution in regards to vertical interleaving
             imageBytes = Compression.InterleaveVerticalPlanes(imageBytes, 320, 200, 4);
 
-            return ((int)imageFileStream.Position, imageBytes);
+            return ((int)imageStream.Position, imageBytes);
         }
 
-        internal override Color[] GetPalette(FileStream imageFileStream, int bitPlanes)
+        internal override Color[] GetPalette(Stream imageStream, int bitPlanes)
         {
             var colors = new Color[(int)Math.Pow(2, bitPlanes)];
 
-            imageFileStream.Seek(PALETTE_OFFSET, SeekOrigin.Begin);
+            imageStream.Seek(PALETTE_OFFSET, SeekOrigin.Begin);
 
             for (int cIndex = 0; cIndex < colors.Length; cIndex++)
             {
-                int v = imageFileStream.ReadByte() << 8 | imageFileStream.ReadByte();
+                int v = imageStream.ReadByte() << 8 | imageStream.ReadByte();
                 // RGB are stored as 3-bit values, i.e. there are 7 possible RGB levels
                 var b = Convert.ToByte(((v >> 0) & 0x07) * (255 / 7));
                 var g = Convert.ToByte(((v >> 4) & 0x07) * (255 / 7));
@@ -69,25 +69,25 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             throw new NotImplementedException();
         }
 
-        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
         {
             return false;
         }
 
-        internal override CompressionType GetCompressionType(FileStream imageFileStream)
+        internal override CompressionType GetCompressionType(Stream imageStream)
         {
             return CompressionType.VERTICAL_RLE2;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(FileStream imageFileStream)
+        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
         {
-            imageFileStream.Seek(0, SeekOrigin.Begin);
-            var resolution = (Resolution)imageFileStream.ReadByte();
+            imageStream.Seek(0, SeekOrigin.Begin);
+            var resolution = (Resolution)imageStream.ReadByte();
 
             int width = 0;
             int height = 0;

@@ -19,13 +19,13 @@ namespace Z80andrew.RetroImage.Services
             MAX_ANIMATIONS = 0x04;
         }
 
-        internal override bool ImageHasAnimationData(FileStream imageFileStream, int bodyBytes)
+        internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
         {
             bool imageHasAnimationData = false;
 
-            imageFileStream.Seek(ANIMATION_OFFSET, SeekOrigin.Begin);
+            imageStream.Seek(ANIMATION_OFFSET, SeekOrigin.Begin);
 
-            var animationValidByte = imageFileStream.ReadByte();
+            var animationValidByte = imageStream.ReadByte();
 
             if ((animationValidByte & 0x80) == 0x80)
             {
@@ -35,22 +35,22 @@ namespace Z80andrew.RetroImage.Services
             return imageHasAnimationData;
         }
 
-        internal override Animation[] GetAnimations(FileStream imageFileStream, byte[] imageBody, int width, int height, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
-            imageFileStream.Seek(ANIMATION_OFFSET + 1, SeekOrigin.Begin);
+            imageStream.Seek(ANIMATION_OFFSET + 1, SeekOrigin.Begin);
 
-            var animationLimitsByte = Convert.ToByte(imageFileStream.ReadByte());
+            var animationLimitsByte = Convert.ToByte(imageStream.ReadByte());
 
             int upperAnimationLimit = (animationLimitsByte >> 4) & 0x0F;
             int lowerAnimationLimit = animationLimitsByte & 0x0F;
 
-            var animationDescriptionByte = Convert.ToByte(imageFileStream.ReadByte());
+            var animationDescriptionByte = Convert.ToByte(imageStream.ReadByte());
 
             var animationEnabled = (animationDescriptionByte & 0x80) == 0x80;
 
-            var vBlanks = (sbyte)imageFileStream.ReadByte();
+            var vBlanks = (sbyte)imageStream.ReadByte();
 
             var animationDirection = vBlanks < 0 ? AnimationDirection.Left : AnimationDirection.Right;
 
