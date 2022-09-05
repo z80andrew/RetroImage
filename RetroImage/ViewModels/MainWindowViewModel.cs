@@ -107,11 +107,25 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _imageViewWidth, value);
         }
 
-        private int _imageZoom;
-        public int ImageZoom
+        private float _imageZoom;
+        public float ImageZoom
         {
             get => _imageZoom;
             set => this.RaiseAndSetIfChanged(ref _imageZoom, value);
+        }
+
+        private float _prevImageZoom;
+        public float PrevImageZoom
+        {
+            get => _prevImageZoom;
+            set => this.RaiseAndSetIfChanged(ref _prevImageZoom, value);
+        }
+
+        public bool _isFullScreen;
+        public bool IsFullScreen
+        {
+            get => _isFullScreen;
+            set => this.RaiseAndSetIfChanged(ref _isFullScreen, value);
         }
 
         public ICommand ShowNextImageCommand { get; }
@@ -169,7 +183,7 @@ namespace RetroImage.ViewModels
             this.WhenAnyValue(model => model.ImageZoom)
                 .Subscribe(index =>
                 {
-                    ImageViewWidth = _baseAtariImage == null ? 320 : _baseAtariImage.Width * ImageZoom;
+                    ImageViewWidth = (int)(_baseAtariImage == null ? 320 : _baseAtariImage.Width * ImageZoom);
                 });
 
             var startupImageUri = @"avares://RetroImage/Assets/Images/MAGICMTN.PC1";
@@ -318,6 +332,35 @@ namespace RetroImage.ViewModels
 
                 animation.AdvanceFrame();
             }
+        }
+
+        internal void ModifyZoom(Zoom modification)
+        {
+            if (!IsFullScreen)
+            {
+                if (modification == Zoom.Increase) ImageZoom++;
+                else if (modification == Zoom.Decrease) ImageZoom--;
+            }
+        }
+
+        internal void ToggleFullScreen(bool isFullScreen, PixelRect screenBounds)
+        {
+            if(isFullScreen)
+            {
+                PrevImageZoom = ImageZoom;
+
+                var maxWidthZoom = (float)screenBounds.Width / _baseAtariImage.Width;
+                var maxHeightZoom = (float)screenBounds.Height / _baseAtariImage.Height;
+
+                ImageZoom = Math.Min(maxWidthZoom, maxHeightZoom);
+            }
+
+            else
+            {
+                ImageZoom = PrevImageZoom;
+            }
+
+            IsFullScreen = isFullScreen;
         }
     }
 }

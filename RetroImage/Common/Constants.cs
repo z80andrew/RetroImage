@@ -29,5 +29,12 @@ namespace Z80andrew.RetroImage.Common
             VERTICAL_RLE1,
             VERTICAL_RLE2,
         }
+
+        internal enum Zoom
+        {
+            Increase,
+            Decrease,
+            Reset
+        }
     }
 }

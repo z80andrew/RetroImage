@@ -12,6 +12,7 @@
     <AvaloniaResource Include="Assets\**" />
     <None Remove=".gitignore" />
     <None Remove="Assets\Icons\folder.png" />
+    <None Remove="Assets\Icons\maximize.png" />
     <None Remove="Assets\Icons\next.png" />
     <None Remove="Assets\Icons\pause-button.png" />
     <None Remove="Assets\Icons\play-button.png" />

@@ -19,44 +19,50 @@
 	</Design.DataContext>
 
 	<DockPanel Classes="AppDockPanel">
-		<StackPanel HorizontalAlignment="Center" Name="MenuStackPanel"
+		<StackPanel IsVisible="{Binding !IsFullScreen }" HorizontalAlignment="Center" Name="MenuStackPanel"
 					DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,0">
 			<Button ToolTip.Tip="Load">
-				<Image Width="40" Source="/Assets/Icons/folder.png"/>
+				<Image Width="30" Source="/Assets/Icons/folder.png"/>
 			</Button>
 			<Button ToolTip.Tip="Export" Command="{Binding ExportAllImagesCommand}">
-				<Image Width="40" Source="/Assets/Icons/sending.png"/>
+				<Image Width="30" Source="/Assets/Icons/sending.png"/>
 			</Button>
 			<!--<Button Command="{Binding ExportAllImagesCommand}">Export all</Button>-->
 			<Button ToolTip.Tip="Toggle animation" Command="{Binding ToggleAnimationCommand}">
-				<Image Width="40" Source="/Assets/Icons/play-button.png"/>
+				<Image Width="30" Source="/Assets/Icons/play-button.png"/>
 			</Button>
 			<Button ToolTip.Tip="Zoom in">
-				<Image Width="40" Source="/Assets/Icons/zoom-in.png"/>
+				<Image Width="30" Source="/Assets/Icons/zoom-in.png"/>
 			</Button>
 			<Button ToolTip.Tip="Zoom out">
-				<Image Width="40" Source="/Assets/Icons/zoom-out.png"/>
+				<Image Width="30" Source="/Assets/Icons/zoom-out.png"/>
+			</Button>
+			<Button ToolTip.Tip="Full screen" Click="ToggleFullScreenEvent">
+				<Image Width="30" Source="/Assets/Icons/maximize.png"/>
 			</Button>
 		</StackPanel>
 
 		<Panel Name="ImagePanel" DragDrop.AllowDrop="True">
-			<TextBlock Padding="0" DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>			
-				<Viewbox Name="ImageViewbox" Stretch="Uniform" StretchDirection="Both" Width="{Binding ImageViewWidth}">
-					<Panel Name="ViewboxPanel">
-						<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}"/>
-						<Image ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}"/>
-						<Image ZIndex="20" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}"/>
-						<Image ZIndex="30" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}"/>
-						<Image ZIndex="40" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}"/>
-					</Panel>
-				</Viewbox>
-				<Button Name="PrevImageButton" Opacity="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Command="{Binding ShowPrevImageCommand}">
-					<Image Width="30" Source="/Assets/Icons/next.png"/>
-				</Button>
-				<Button Name="NextImageButton" Opacity="0" VerticalAlignment="Stretch" HorizontalAlignment="Right" Command="{Binding ShowNextImageCommand}">
-					<Image Width="30" Source="/Assets/Icons/next.png"/>
-				</Button>				
+			<TextBlock Padding="0" DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+			<Viewbox Name="ImageViewbox" Stretch="Uniform" StretchDirection="Both" Width="{Binding ImageViewWidth}">
+				<Panel Name="ViewboxPanel">
+					<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}"/>
+					<Image ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}"/>
+					<Image ZIndex="20" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer2Image}"/>
+					<Image ZIndex="30" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer3Image}"/>
+					<Image ZIndex="40" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer4Image}"/>
+				</Panel>
+			</Viewbox>
+			<Button Name="FullScreenToggleButton" Opacity="0" IsVisible="{Binding IsFullScreen}"  VerticalAlignment="Top" HorizontalAlignment="Stretch" ToolTip.Tip="Full screen" Click="ToggleFullScreenEvent">
+				<Image Width="30" Source="/Assets/Icons/maximize.png"/>
+			</Button>
+			<Button Name="PrevImageButton" Opacity="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Command="{Binding ShowPrevImageCommand}">
+				<Image Width="30" Source="/Assets/Icons/next.png"/>
+			</Button>
+			<Button Name="NextImageButton" Opacity="0" VerticalAlignment="Stretch" HorizontalAlignment="Right" Command="{Binding ShowNextImageCommand}">
+				<Image Width="30" Source="/Assets/Icons/next.png"/>
+			</Button>
 		</Panel>
-		
+
 	</DockPanel>
 </Window>
