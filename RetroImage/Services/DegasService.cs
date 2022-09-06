@@ -36,35 +36,14 @@ namespace Z80andrew.RetroImage.Services
             return (compression & 0x80) == 0x80 ? CompressionType.PACKBITS : CompressionType.NONE;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
+        internal override (Resolution resolution, int width, int height, int renderHeight, int bitPlanes) GetImageProperties(Stream imageStream)
         {
             imageStream.Seek(RESOLUTION_OFFSET, SeekOrigin.Begin);
             var resolution = (Resolution)imageStream.ReadByte();
 
-            int width = -1;
-            int height = -1;
-            int bitPlanes = -1;
+            (var width, var height, var renderHeight, var numBitPlanes) = GetResolutionSettings(resolution);
 
-            switch (resolution)
-            {
-                case Resolution.LOW:
-                    width = 320;
-                    height = 200;
-                    bitPlanes = 4;
-                    break;
-                case Resolution.MED:
-                    width = 640;
-                    height = 200;
-                    bitPlanes = 2;
-                    break;
-                case Resolution.HIGH:
-                    width = 640;
-                    height = 400;
-                    bitPlanes = 1;
-                    break;
-            }
-
-            return (resolution, width, height, bitPlanes);
+            return (resolution, width, height, renderHeight, numBitPlanes);
         }
 
         internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)
@@ -132,7 +111,7 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
@@ -154,7 +133,7 @@ namespace Z80andrew.RetroImage.Services
 
                 if (animationDirection != AnimationDirection.None)
                 {
-                    animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex, animationIndex)
+                    animations.Add(new Animation(imageBody, width, height, renderHeight, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex, animationIndex)
                     {
                         Direction = animationDirection,
                         Delay = (float)(1000 / 60) * (128 - animationDelay)

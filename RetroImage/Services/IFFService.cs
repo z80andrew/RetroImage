@@ -98,7 +98,7 @@ namespace Z80andrew.RetroImage.Services
             return (bytesRead, imageBytes);
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
+        internal override (Resolution resolution, int width, int height, int renderHeight, int bitPlanes) GetImageProperties(Stream imageStream)
         {
             var headerOffset = GetChunkOffset(imageStream, CHUNK_ID_BITMAP_HEADER);
 
@@ -106,6 +106,7 @@ namespace Z80andrew.RetroImage.Services
 
             int width = imageStream.ReadByte() << 8 | imageStream.ReadByte();
             int height = imageStream.ReadByte() << 8 | imageStream.ReadByte();
+            int renderHeight = height;
             imageStream.Seek(4, SeekOrigin.Current);
             int bitPlanes = imageStream.ReadByte();
 
@@ -113,11 +114,15 @@ namespace Z80andrew.RetroImage.Services
 
             if (width == 640)
             {
-                if (height == 200) resolution = Resolution.MED;
+                if (height == 200)
+                {
+                    resolution = Resolution.MED;
+                    renderHeight*=2;
+                }
                 else if (height == 400) resolution = Resolution.HIGH;
             }
 
-            return (resolution, width, height, bitPlanes);
+            return (resolution, width, height, renderHeight, bitPlanes);
         }
 
         internal override Color[] GetPalette(Stream imageStream, int bitPlanes)
@@ -160,7 +165,7 @@ namespace Z80andrew.RetroImage.Services
             return hasAnimations;
         }
 
-        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>(0);
             var animOffset = GetChunkOffset(imageStream, CHUNK_ID_COLOR_RANGE);
@@ -183,7 +188,7 @@ namespace Z80andrew.RetroImage.Services
                         var lowerLimit = imageStream.ReadByte();
                         var upperLimit = imageStream.ReadByte();
 
-                        animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, lowerLimit, upperLimit, 0)
+                        animations.Add(new Animation(imageBody, width, height, renderHeight, resolution, numBitPlanes, palette, lowerLimit, upperLimit, 0)
                         {
                             Delay = animationDelay,
                             Direction = AnimationDirection.Right

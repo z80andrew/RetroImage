@@ -18,14 +18,14 @@ namespace Z80andrew.RetroImage.Models
         private int NumFrames { get; set; }
         internal Image<Rgba32>[] Frames { get; set; }
 
-        internal Animation(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
+        internal Animation(byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex, int animationLayer)
         {
             NumFrames = upperPaletteIndex - lowerPaletteIndex;
-            Frames = GenerateFrames(imageBody, width, height, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex);
+            Frames = GenerateFrames(imageBody, width, height, renderHeight, resolution, numBitPlanes, palette, lowerPaletteIndex, upperPaletteIndex);
             AnimationLayer = animationLayer;
         }
 
-        internal Image<Rgba32>[] GenerateFrames(byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
+        internal Image<Rgba32>[] GenerateFrames(byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette, int lowerPaletteIndex, int upperPaletteIndex)
         {
             var degasService = new DegasService();
 
@@ -36,6 +36,7 @@ namespace Z80andrew.RetroImage.Models
             frames[0] = degasService.GetImageFromRawData(
                 width,
                 height,
+                renderHeight,
                 resolution,
                 numBitPlanes,
                 palette,
@@ -58,6 +59,7 @@ namespace Z80andrew.RetroImage.Models
                 frames[i] = degasService.GetImageFromRawData(
                     width,
                     height,
+                    renderHeight,
                     resolution,
                     numBitPlanes,
                     newPalette,

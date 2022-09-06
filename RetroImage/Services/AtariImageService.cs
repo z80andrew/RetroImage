@@ -11,11 +11,43 @@ namespace Z80andrew.RetroImage.Services
     internal abstract class AtariImageService
     {
         internal abstract (int, byte[]) GetImageBody(Stream imageStream, CompressionType compression, int width, int height, int bitPlanes);
-        internal abstract Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette);
+        internal abstract Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette);
         internal abstract bool ImageHasAnimationData(Stream imageStream, int bodyBytes);
         internal abstract CompressionType GetCompressionType(Stream imageStream);
-        internal abstract (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream);
+        internal abstract (Resolution resolution, int width, int height, int renderHeight, int bitPlanes) GetImageProperties(Stream imageStream);
         internal abstract Color[] GetPalette(Stream imageStream, int bitPlanes);
+
+        internal (int width, int height, int renderHeight, int numBitPlanes) GetResolutionSettings(Resolution resolution)
+        {
+            var width = -1;
+            var height = -1;
+            var renderHeight = -1;
+            var numBitPlanes = -1;
+
+            switch (resolution)
+            {
+                case Resolution.LOW:
+                    width = 320;
+                    height = 200;
+                    numBitPlanes = 4;
+                    renderHeight = height;
+                    break;
+                case Resolution.MED:
+                    width = 640;
+                    height = 200;
+                    numBitPlanes = 2;
+                    renderHeight = height*2;
+                    break;
+                case Resolution.HIGH:
+                    width = 640;
+                    height = 400;
+                    numBitPlanes = 1;
+                    renderHeight = height;
+                    break;
+            }
+
+            return (width, height, renderHeight, numBitPlanes);
+        }
 
         internal AtariImageModel GetImage(string path)
         {
@@ -31,18 +63,18 @@ namespace Z80andrew.RetroImage.Services
 
         internal AtariImageModel GetImage(Stream imageStream, string fileName)
         {
-            (var resolution, var width, var height, var bitPlanes) = GetImageProperties(imageStream);
+            (var resolution, var width, var height, var renderHeight, var bitPlanes) = GetImageProperties(imageStream);
 
             var compression = GetCompressionType(imageStream);
             var palette = GetPalette(imageStream, bitPlanes);
             (var fileBodyByteCount, var imageBody) = GetImageBody(imageStream, compression, width, height, bitPlanes);
-            var degasImage = GetImageFromRawData(width, height, resolution, bitPlanes, palette, imageBody);
+            var degasImage = GetImageFromRawData(width, height, renderHeight, resolution, bitPlanes, palette, imageBody);
 
             var animations = new Animation[0];
 
             if (ImageHasAnimationData(imageStream, fileBodyByteCount))
             {
-                animations = GetAnimations(imageStream, imageBody, width, height, resolution, bitPlanes, palette);
+                animations = GetAnimations(imageStream, imageBody, width, height, renderHeight, resolution, bitPlanes, palette);
             }
 
             var atariImage = new AtariImageModel()
@@ -50,6 +82,7 @@ namespace Z80andrew.RetroImage.Services
                 Name = Path.GetFileNameWithoutExtension(fileName),
                 Width = width,
                 Height = height,
+                RenderHeight = renderHeight,
                 Resolution = resolution,
                 Compression = compression,
                 NumBitPlanes = bitPlanes,
@@ -62,20 +95,18 @@ namespace Z80andrew.RetroImage.Services
             return atariImage;
         }
 
-        internal Image<Rgba32> GetImageFromRawData(int width, int height, Constants.Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)
+        internal Image<Rgba32> GetImageFromRawData(int width, int height, int renderHeight, Constants.Resolution resolution, int bitPlanes, Color[] colors, byte[] imageBytes)
         {
             int x = 0;
             int y = 0;
             int arrayIndex = 0;
-            // Medium res on the Atari is stretched 2x vertically            
-            int yIncrement = resolution == Resolution.MED ? 2 : 1;
-            var outputHeight = resolution == Resolution.MED ? height * 2 : height;
+            int yIncrement = renderHeight/height;
 
-            var outputImage = new Image<Rgba32>(width, outputHeight, RGBA_TRANSPARENT);
+            var outputImage = new Image<Rgba32>(width, renderHeight, RGBA_TRANSPARENT);
 
             //try
             //{
-            while (y < outputHeight)
+            while (y < renderHeight)
             {
                 while (x < width)
                 {

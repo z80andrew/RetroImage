@@ -35,7 +35,7 @@ namespace Z80andrew.RetroImage.Services
             return imageHasAnimationData;
         }
 
-        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, int renderHeight, Constants.Resolution resolution, int numBitPlanes, Color[] palette)
         {
             var animations = new List<Animation>();
 
@@ -61,7 +61,7 @@ namespace Z80andrew.RetroImage.Services
             if (animationEnabled)
             {
 
-                animations.Add(new Animation(imageBody, width, height, resolution, numBitPlanes, palette, upperAnimationLimit, lowerAnimationLimit, 0)
+                animations.Add(new Animation(imageBody, width, height, renderHeight, resolution, numBitPlanes, palette, upperAnimationLimit, lowerAnimationLimit, 0)
                 {
                     Delay = animationDelay,
                     Direction = animationDirection

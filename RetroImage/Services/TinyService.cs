@@ -69,7 +69,7 @@ namespace Z80andrew.RetroImage.Services
             return colors;
         }
 
-        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, Resolution resolution, int numBitPlanes, Color[] palette)
+        internal override Animation[] GetAnimations(Stream imageStream, byte[] imageBody, int width, int height, int renderHeight, Resolution resolution, int numBitPlanes, Color[] palette)
         {
             throw new NotImplementedException();
         }
@@ -84,35 +84,14 @@ namespace Z80andrew.RetroImage.Services
             return CompressionType.VERTICAL_RLE2;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
+        internal override (Resolution resolution, int width, int height, int renderHeight, int bitPlanes) GetImageProperties(Stream imageStream)
         {
             imageStream.Seek(0, SeekOrigin.Begin);
             var resolution = (Resolution)imageStream.ReadByte();
 
-            int width = 0;
-            int height = 0;
-            int bitPlanes = 0;
+            (var width, var height, var renderHeight, var numBitPlanes) = GetResolutionSettings(resolution);
 
-            switch (resolution)
-            {
-                case Resolution.LOW:
-                    width = 320;
-                    height = 200;
-                    bitPlanes = 4;
-                    break;
-                case Resolution.MED:
-                    width = 640;
-                    height = 200;
-                    bitPlanes = 2;
-                    break;
-                case Resolution.HIGH:
-                    width = 640;
-                    height = 400;
-                    bitPlanes = 1;
-                    break;
-            }
-
-            return (resolution, width, height, bitPlanes);
+            return (resolution, width, height, renderHeight, numBitPlanes);
         }
     }
 }

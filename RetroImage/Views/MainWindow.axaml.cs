@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.ReactiveUI;
 using RetroImage.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
@@ -17,20 +18,26 @@ namespace RetroImage.Views
         {
             InitializeComponent();
 
-            degasService = new DegasService();
+            PrevImageButton.PointerEnter += PointerEvent;
+            NextImageButton.PointerEnter += PointerEvent;
+            FullScreenToggleButton.PointerEnter += PointerEvent;
+            PrevImageButton.PointerLeave += PointerEvent;
+            NextImageButton.PointerLeave += PointerEvent;
+            FullScreenToggleButton.PointerLeave += PointerEvent;
 
-            var prevButton = this.FindControl<Button>("PrevImageButton");
-            var nextButton = this.FindControl<Button>("NextImageButton");
-            var fullScreenButton = this.FindControl<Button>("FullScreenToggleButton");
-            prevButton.PointerEnter += PointerEnterEvent;
-            nextButton.PointerEnter += PointerEnterEvent;
-            prevButton.PointerLeave += PointerEnterEvent;
-            nextButton.PointerLeave += PointerEnterEvent;
-            fullScreenButton.PointerEnter += PointerEnterEvent;
-            fullScreenButton.PointerLeave += PointerEnterEvent;
+            ZoomInButton.Click += ZoomButton_Click;
+            ZoomOutButton.Click += ZoomButton_Click;
 
             AddHandler(DragDrop.DropEvent, DropEvent);
             AddHandler(KeyDownEvent, KeyboardEvent);
+        }
+
+        private void ZoomButton_Click(object? sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+
+            if (button.Name == ZoomInButton.Name) ViewModel.ModifyZoom(Zoom.Increase);
+            else if (button.Name == ZoomOutButton.Name) ViewModel.ModifyZoom(Zoom.Decrease);
         }
 
         public void ToggleFullScreenEvent(object? sender, RoutedEventArgs args)
@@ -38,9 +45,13 @@ namespace RetroImage.Views
             ToggleFullScreen();
         }
 
-        public void PointerEnterEvent(object? sender, RoutedEventArgs args)
+        public void PointerEvent(object? sender, RoutedEventArgs args)
         {
             var button = sender as Button;
+
+            if ((button.Name == PrevImageButton.Name || button.Name == NextImageButton.Name)
+                && ViewModel.ImagePaths.Length == 1) return;
+
             bool mouseEntered = args.RoutedEvent.Name == "PointerEnter";
             button.Opacity = mouseEntered ? 1 : 0;
         }

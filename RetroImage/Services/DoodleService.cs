@@ -12,14 +12,15 @@ namespace Z80andrew.RetroImage.Services
             MAX_ANIMATIONS = 0x00;
         }
 
-        internal override (Resolution resolution, int width, int height, int bitPlanes) GetImageProperties(Stream imageStream)
+        internal override (Resolution resolution, int width, int height, int renderHeight, int bitPlanes) GetImageProperties(Stream imageStream)
         {
             var resolution = Resolution.HIGH;
             int width = 640;
             int height = 400;
+            int renderHeight = height;
             int bitPlanes = 1;
 
-            return (resolution, width, height, bitPlanes);
+            return (resolution, width, height, renderHeight, bitPlanes);
         }
 
         internal override bool ImageHasAnimationData(Stream imageStream, int bodyBytes)

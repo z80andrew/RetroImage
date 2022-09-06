@@ -19,32 +19,36 @@
 	</Design.DataContext>
 
 	<DockPanel Classes="AppDockPanel">
-		<StackPanel IsVisible="{Binding !IsFullScreen }" HorizontalAlignment="Center" Name="MenuStackPanel"
-					DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,0">
+		<StackPanel Name="MenuStackPanel" IsVisible="{Binding !IsFullScreen }" 
+					HorizontalAlignment="Left"
+					DockPanel.Dock="Top" Orientation="Horizontal" 
+					Margin="0,0,0,0">
 			<Button ToolTip.Tip="Load">
 				<Image Width="30" Source="/Assets/Icons/folder.png"/>
 			</Button>
 			<Button ToolTip.Tip="Export" Command="{Binding ExportAllImagesCommand}">
 				<Image Width="30" Source="/Assets/Icons/sending.png"/>
 			</Button>
-			<!--<Button Command="{Binding ExportAllImagesCommand}">Export all</Button>-->
 			<Button ToolTip.Tip="Toggle animation" Command="{Binding ToggleAnimationCommand}">
 				<Image Width="30" Source="/Assets/Icons/play-button.png"/>
 			</Button>
-			<Button ToolTip.Tip="Zoom in">
-				<Image Width="30" Source="/Assets/Icons/zoom-in.png"/>
-			</Button>
-			<Button ToolTip.Tip="Zoom out">
+
+			<Button Name="ZoomOutButton" ToolTip.Tip="Zoom out">
 				<Image Width="30" Source="/Assets/Icons/zoom-out.png"/>
 			</Button>
+			<Label Content="{Binding ZoomText}" VerticalContentAlignment="Center"></Label>
+			<Button Name="ZoomInButton" ToolTip.Tip="Zoom in">
+				<Image Width="30" Source="/Assets/Icons/zoom-in.png"/>
+			</Button>
+			
 			<Button ToolTip.Tip="Full screen" Click="ToggleFullScreenEvent">
 				<Image Width="30" Source="/Assets/Icons/maximize.png"/>
 			</Button>
 		</StackPanel>
 
-		<Panel Name="ImagePanel" DragDrop.AllowDrop="True">
+		<Panel ClipToBounds="True" DockPanel.Dock="Top" Name="ImagePanel" DragDrop.AllowDrop="True" Background="Black">
 			<TextBlock Padding="0" DockPanel.Dock="Top" Text="{Binding CurrentImageName}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-			<Viewbox Name="ImageViewbox" Stretch="Uniform" StretchDirection="Both" Width="{Binding ImageViewWidth}">
+			<Viewbox Name="ImageViewbox" Stretch="Uniform" StretchDirection="Both" Width="{Binding ImageViewWidth}" Height="{Binding ImageViewHeight}">
 				<Panel Name="ViewboxPanel">
 					<Image ZIndex="0" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding BaseImage}"/>
 					<Image ZIndex="10" RenderOptions.BitmapInterpolationMode="Default" DockPanel.Dock="Top" Source="{Binding AnimationLayer1Image}"/>
@@ -63,6 +67,5 @@
 				<Image Width="30" Source="/Assets/Icons/next.png"/>
 			</Button>
 		</Panel>
-
 	</DockPanel>
 </Window>

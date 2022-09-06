@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Input;
+using Z80andrew.RetroImage.Common;
+using Z80andrew.RetroImage.Exntensions;
 using Z80andrew.RetroImage.Models;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
@@ -29,6 +31,8 @@ namespace RetroImage.ViewModels
         private AtariImageModel _baseAtariImage;
 
         private ImageFormatService _imageFormatService;
+
+        private float _zoomStep = 0.25f;
 
         private bool _animate;
         public bool Animate
@@ -107,11 +111,25 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _imageViewWidth, value);
         }
 
+        private int _imageViewHeight;
+        public int ImageViewHeight
+        {
+            get => _imageViewHeight;
+            set => this.RaiseAndSetIfChanged(ref _imageViewHeight, value);
+        }
+
         private float _imageZoom;
         public float ImageZoom
         {
             get => _imageZoom;
             set => this.RaiseAndSetIfChanged(ref _imageZoom, value);
+        }
+
+        private string _zoomText;
+        public string ZoomText
+        {
+            get => _zoomText;
+            set => this.RaiseAndSetIfChanged(ref _zoomText, value);
         }
 
         private float _prevImageZoom;
@@ -128,6 +146,9 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _isFullScreen, value);
         }
 
+        private PixelRect MinImageBounds = new PixelRect(0,0,320,200);
+        private PixelRect _screenBounds;
+
         public ICommand ShowNextImageCommand { get; }
         public ICommand ShowPrevImageCommand { get; }
         public ICommand ToggleAnimationCommand { get; }
@@ -141,12 +162,15 @@ namespace RetroImage.ViewModels
             Animate = true;
             ExportPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "export");
 
+            IsFullScreen = false;
+            ImageViewWidth = 1;
+            ImageViewHeight = 1;
+
             var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
             Image<Rgba32> blankImg = (Image<Rgba32>)Image.Load(assets.Open(new Uri(@"avares://RetroImage/Assets/Images/empty.png")));
             _blankBitmap = ConvertImageToBitmap(blankImg);
 
-            //SetImagePaths(new string[] { "" });
-            ImagePaths = new string[] {""} ;
+            ImagePaths = new string[] { "" };
             ImageIndex = 0;
 
             ShowNextImageCommand = ReactiveCommand.Create(() =>
@@ -177,20 +201,22 @@ namespace RetroImage.ViewModels
             this.WhenAnyValue(model => model.ImageIndex)
                 .Subscribe(index =>
                 {
-                    InitImage(ImagePaths[index]);
+                    InitImageFromPath(ImagePaths[index]);
                 });
 
             this.WhenAnyValue(model => model.ImageZoom)
                 .Subscribe(index =>
                 {
-                    ImageViewWidth = (int)(_baseAtariImage == null ? 320 : _baseAtariImage.Width * ImageZoom);
+                    ImageViewWidth = (int)(_baseAtariImage == null ? MinImageBounds.Width : _baseAtariImage.Width * ImageZoom);
+                    ImageViewHeight = (int)(_baseAtariImage == null ? MinImageBounds.Height : _baseAtariImage.RenderHeight * ImageZoom);
+                    ZoomText = $"{ImageZoom * 100}%";
                 });
 
             var startupImageUri = @"avares://RetroImage/Assets/Images/MAGICMTN.PC1";
 
             using (var imageStream = assets.Open(new Uri(startupImageUri)))
             {
-                InitImage(imageStream, startupImageUri);
+                InitImageFromStream(imageStream, startupImageUri);
             }
         }
 
@@ -206,6 +232,8 @@ namespace RetroImage.ViewModels
 
         internal void SetImagePaths(IEnumerable<string> paths)
         {
+            ImageIndex = 0;
+
             var imagePaths = new List<string>();
 
             var enumOptions = new EnumerationOptions()
@@ -230,7 +258,7 @@ namespace RetroImage.ViewModels
 
             ImagePaths = imagePaths.ToArray();
 
-            if (ImagePaths.Length > 0) InitImage(ImagePaths[0]);
+            if (ImagePaths.Length > 0) InitImageFromPath(ImagePaths[0]);
         }
 
         private void ResetAnimations()
@@ -246,24 +274,35 @@ namespace RetroImage.ViewModels
             }
         }
 
-        private void InitImage(Stream imageStream, string imageName)
+        private void InitImageFromStream(Stream imageStream, string imageName)
         {
             _baseAtariImage = _imageFormatService.GetImageServiceForFilePath(imageName)?.GetImage(imageStream, imageName);
-            BaseImage = ConvertImageToBitmap(_baseAtariImage.Image);
-            ImageZoom = _baseAtariImage.Width < 640 ? 2 : 1;
-            InitAnimations(_baseAtariImage.Animations);
+            InitImage(_baseAtariImage, imageName);
         }
 
-        internal void InitImage(string imagePath)
+        internal void InitImageFromPath(string imagePath)
         {
             _baseAtariImage = _imageFormatService.GetImageServiceForFilePath(imagePath)?.GetImage(imagePath);
+            InitImage(_baseAtariImage, imagePath);
+        }
 
-            if (_baseAtariImage != null)
+        private void InitImage(AtariImageModel image, string imagePath)
+        {
+            if (image != null)
             {
                 ResetAnimations();
                 SetImageLabel(imagePath, ImageIndex, ImagePaths.Length);
                 BaseImage = ConvertImageToBitmap(_baseAtariImage.Image);
-                ImageZoom = _baseAtariImage.Width < 640 ? 2 : 1;
+
+                ImageZoom = 0;
+
+                if (IsFullScreen)
+                {
+                    ImageZoom = GetZoomForBounds(_screenBounds);
+                    PrevImageZoom = GetZoomForBounds(MinImageBounds.Mutiply(2)); // Image changed while in fullscreen, so invalidate previous zoom value
+                }
+
+                else ImageZoom = GetZoomForBounds(MinImageBounds.Mutiply(2));
 
                 InitAnimations(_baseAtariImage.Animations);
             }
@@ -271,7 +310,7 @@ namespace RetroImage.ViewModels
 
         private void SetImageLabel(string imagePath, int imageIndex, int numImages)
         {
-            CurrentImageName = $"{Path.GetFileName(imagePath)} ({imageIndex+1}/{numImages})";
+            CurrentImageName = $"{Path.GetFileName(imagePath)} ({imageIndex + 1}/{numImages})";
         }
 
         public IBitmap ConvertImageToBitmap(Image<Rgba32> inputImage)
@@ -338,21 +377,22 @@ namespace RetroImage.ViewModels
         {
             if (!IsFullScreen)
             {
-                if (modification == Zoom.Increase) ImageZoom++;
-                else if (modification == Zoom.Decrease) ImageZoom--;
+                if (modification == Zoom.Increase) ImageZoom += _zoomStep;
+                else if (modification == Zoom.Decrease)
+                {
+                    ImageZoom -= _zoomStep;
+                    if (ImageViewWidth < MinImageBounds.Width || ImageViewHeight < MinImageBounds.Height) ImageZoom += _zoomStep;
+                }
             }
         }
 
         internal void ToggleFullScreen(bool isFullScreen, PixelRect screenBounds)
         {
-            if(isFullScreen)
+            if (isFullScreen)
             {
                 PrevImageZoom = ImageZoom;
-
-                var maxWidthZoom = (float)screenBounds.Width / _baseAtariImage.Width;
-                var maxHeightZoom = (float)screenBounds.Height / _baseAtariImage.Height;
-
-                ImageZoom = Math.Min(maxWidthZoom, maxHeightZoom);
+                _screenBounds = screenBounds;
+                ImageZoom = GetZoomForBounds(_screenBounds);
             }
 
             else
@@ -361,6 +401,14 @@ namespace RetroImage.ViewModels
             }
 
             IsFullScreen = isFullScreen;
+        }
+
+        private float GetZoomForBounds(PixelRect bounds)
+        {
+            var maxWidthZoom = (float)bounds.Width / _baseAtariImage.Width;
+            var maxHeightZoom = (float)bounds.Height / _baseAtariImage.RenderHeight;
+
+            return Math.Min(maxWidthZoom, maxHeightZoom);
         }
     }
 }

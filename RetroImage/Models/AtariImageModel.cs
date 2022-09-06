@@ -15,6 +15,7 @@ namespace Z80andrew.RetroImage.Models
         public string Name { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
+        public int RenderHeight { get; set; }
         public CompressionType Compression { get; set; }
         public int NumBitPlanes { get; set; }
         public Color[] Palette { get; set; }
