@@ -36,7 +36,7 @@ namespace Z80andrew.RetroImage.Services
                     width = 640;
                     height = 200;
                     numBitPlanes = 2;
-                    renderHeight = height*2;
+                    renderHeight = height * 2;
                     break;
                 case Resolution.HIGH:
                     width = 640;
@@ -52,7 +52,7 @@ namespace Z80andrew.RetroImage.Services
         internal AtariImageModel GetImage(string path)
         {
             AtariImageModel atariImage;
-            
+
             using (Stream imageStream = File.OpenRead(path))
             {
                 atariImage = GetImage(imageStream, path);
@@ -100,7 +100,7 @@ namespace Z80andrew.RetroImage.Services
             int x = 0;
             int y = 0;
             int arrayIndex = 0;
-            int yIncrement = renderHeight/height;
+            int yIncrement = renderHeight / height;
 
             var outputImage = new Image<Rgba32>(width, renderHeight, RGBA_TRANSPARENT);
 

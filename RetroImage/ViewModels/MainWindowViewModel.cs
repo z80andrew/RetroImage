@@ -12,6 +12,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Z80andrew.RetroImage.Common;
 using Z80andrew.RetroImage.Exntensions;
@@ -25,14 +28,15 @@ namespace RetroImage.ViewModels
     public class MainWindowViewModel : ViewModelBase, INotifyPropertyChanged
     {
         private DispatcherTimer[] _timers;
-
         private IBitmap _blankBitmap;
-
         private AtariImageModel _baseAtariImage;
-
         private ImageFormatService _imageFormatService;
-
         private float _zoomStep = 0.25f;
+        private PixelRect MinImageBounds = new PixelRect(0, 0, 320, 200);
+        private PixelRect _screenBounds;
+        private string _fileDialogFolder;
+
+        #region properties
 
         private bool _animate;
         public bool Animate
@@ -146,8 +150,26 @@ namespace RetroImage.ViewModels
             set => this.RaiseAndSetIfChanged(ref _isFullScreen, value);
         }
 
-        private PixelRect MinImageBounds = new PixelRect(0,0,320,200);
-        private PixelRect _screenBounds;
+        private string[] _selectedFiles;
+        public string[] SelectedFiles
+        {
+            get => _selectedFiles;
+            set => this.RaiseAndSetIfChanged(ref _selectedFiles, value);
+        }
+
+        private string _selectedFolder;
+        public string SelectedFolder
+        {
+            get => _selectedFolder;
+            set => this.RaiseAndSetIfChanged(ref _selectedFolder, value);
+        }
+
+        #endregion
+
+        public ReactiveCommand<Unit, Unit> OpenFilesCommand { get; }
+        public Interaction<string, string[]> ShowFileDialog { get; }
+        public ReactiveCommand<Unit, Unit> OpenFolderCommand { get; }
+        public Interaction<string, string?> ShowFolderDialog { get; }
 
         public ICommand ShowNextImageCommand { get; }
         public ICommand ShowPrevImageCommand { get; }
@@ -172,6 +194,12 @@ namespace RetroImage.ViewModels
 
             ImagePaths = new string[] { "" };
             ImageIndex = 0;
+
+            OpenFilesCommand = ReactiveCommand.CreateFromTask(OpenFilesAsync);
+            ShowFileDialog = new Interaction<string, string[]>();
+
+            OpenFolderCommand = ReactiveCommand.CreateFromTask(OpenFolderAsync);
+            ShowFolderDialog = new Interaction<string, string?>();
 
             ShowNextImageCommand = ReactiveCommand.Create(() =>
             {
@@ -212,6 +240,18 @@ namespace RetroImage.ViewModels
                     ZoomText = $"{ImageZoom * 100}%";
                 });
 
+            this.WhenAnyValue(model => model.SelectedFolder)
+                .Subscribe(path =>
+                {
+                    SetImagePaths(new List<string> { path });
+                });
+
+            this.WhenAnyValue(model => model.SelectedFiles)
+                .Subscribe(paths =>
+                {
+                    SetImagePaths(paths?.ToList());
+                });
+
             var startupImageUri = @"avares://RetroImage/Assets/Images/MAGICMTN.PC1";
 
             using (var imageStream = assets.Open(new Uri(startupImageUri)))
@@ -232,6 +272,8 @@ namespace RetroImage.ViewModels
 
         internal void SetImagePaths(IEnumerable<string> paths)
         {
+            if (paths == null) return;
+
             ImageIndex = 0;
 
             var imagePaths = new List<string>();
@@ -248,15 +290,14 @@ namespace RetroImage.ViewModels
 
                 else if (Directory.Exists(path))
                 {
-                    foreach (var filePath in Directory.EnumerateFiles(path, "*.*", enumOptions).
-                        Where(x => _imageFormatService.fileExtensionServices.Keys.Contains(Path.GetExtension(x).ToUpper())))
+                    foreach (var filePath in Directory.EnumerateFiles(path, "*.*", enumOptions))
                     {
                         imagePaths.Add(filePath);
                     }
                 }
             }
 
-            ImagePaths = imagePaths.ToArray();
+            ImagePaths = imagePaths.Where(x => _imageFormatService.fileExtensionServices.Keys.Contains(Path.GetExtension(x).ToUpper())).ToArray();
 
             if (ImagePaths.Length > 0) InitImageFromPath(ImagePaths[0]);
         }
@@ -409,6 +450,28 @@ namespace RetroImage.ViewModels
             var maxHeightZoom = (float)bounds.Height / _baseAtariImage.RenderHeight;
 
             return Math.Min(maxWidthZoom, maxHeightZoom);
+        }
+
+        private async Task OpenFolderAsync()
+        {
+            var currentFolder = String.IsNullOrEmpty(_fileDialogFolder) ? Constants.DefaultPath : _fileDialogFolder;
+            var folderName = await ShowFolderDialog.Handle(currentFolder);
+
+            if (folderName is not null)
+            {
+                SelectedFolder = folderName;
+            }
+        }
+
+        private async Task OpenFilesAsync()
+        {
+            var fileNames = await ShowFileDialog.Handle(_fileDialogFolder);
+
+            if (fileNames.Any())
+            {
+                SelectedFiles = fileNames;
+                _fileDialogFolder = Path.GetDirectoryName(fileNames.First());
+            }
         }
     }
 }

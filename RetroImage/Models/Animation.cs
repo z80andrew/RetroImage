@@ -1,8 +1,5 @@
 ﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
-using System;
-using System.Collections.Generic;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
 using Color = SixLabors.ImageSharp.Color;

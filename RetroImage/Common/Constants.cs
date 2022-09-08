@@ -1,12 +1,13 @@
 ﻿using SixLabors.ImageSharp.PixelFormats;
+using System;
 
 namespace Z80andrew.RetroImage.Common
 {
     public static class Constants
     {
         public static int SCREEN_MEMORY_BYTES = 32000;
-
         public static Rgba32 RGBA_TRANSPARENT => new Rgba32(0, 0, 0, 0);
+        public static string DefaultPath => AppDomain.CurrentDomain.BaseDirectory;
 
         public enum AnimationDirection
         {

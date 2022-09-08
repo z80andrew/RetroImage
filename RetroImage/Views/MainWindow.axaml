@@ -21,9 +21,11 @@
 	<DockPanel Classes="AppDockPanel">
 		<StackPanel Name="MenuStackPanel" IsVisible="{Binding !IsFullScreen }" 
 					HorizontalAlignment="Left"
-					DockPanel.Dock="Top" Orientation="Horizontal" 
-					Margin="0,0,0,0">
-			<Button ToolTip.Tip="Load">
+					DockPanel.Dock="Top" Orientation="Horizontal">
+			<Button ToolTip.Tip="Open file(s)" Command="{Binding OpenFilesCommand}">
+				<Image Width="30" Source="/Assets/Icons/documents.png"/>
+			</Button>
+			<Button ToolTip.Tip="Open folder" Command="{Binding OpenFolderCommand}">
 				<Image Width="30" Source="/Assets/Icons/folder.png"/>
 			</Button>
 			<Button ToolTip.Tip="Export" Command="{Binding ExportAllImagesCommand}">

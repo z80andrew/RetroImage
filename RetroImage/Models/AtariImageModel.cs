@@ -2,11 +2,11 @@
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using static Z80andrew.RetroImage.Common.Constants;
 using System.Threading.Tasks;
+using static Z80andrew.RetroImage.Common.Constants;
 
 namespace Z80andrew.RetroImage.Models
 {
@@ -61,17 +61,17 @@ namespace Z80andrew.RetroImage.Models
             gifMetaData.Comments = new List<string>() { "Converted from Atari format by RetroImage" };
 
             GifFrameMetadata metadata = gif.Frames.RootFrame.Metadata.GetGifMetadata();
-            metadata.FrameDelay = Convert.ToInt32(Animations[0].Delay/10);
+            metadata.FrameDelay = Convert.ToInt32(Animations[0].Delay / 10);
 
             for (int i = 1; i < Animations[0].Frames.Length; i++)
             {
                 metadata = Animations[0].Frames[i].Frames.RootFrame.Metadata.GetGifMetadata();
-                metadata.FrameDelay = Convert.ToInt32(Animations[0].Delay/10);
+                metadata.FrameDelay = Convert.ToInt32(Animations[0].Delay / 10);
 
                 gif.Frames.AddFrame(Animations[0].Frames[i].Frames.RootFrame);
             }
 
-            await gif.SaveAsGifAsync(Path.Combine(exportPath,Name + ".gif"));
+            await gif.SaveAsGifAsync(Path.Combine(exportPath, Name + ".gif"));
         }
     }
 }

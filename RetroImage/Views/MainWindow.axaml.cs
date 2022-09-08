@@ -2,10 +2,12 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.ReactiveUI;
+using ReactiveUI;
 using RetroImage.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+using Z80andrew.RetroImage.Common;
 using Z80andrew.RetroImage.Services;
 using static Z80andrew.RetroImage.Common.Constants;
 
@@ -30,6 +32,9 @@ namespace RetroImage.Views
 
             AddHandler(DragDrop.DropEvent, DropEvent);
             AddHandler(KeyDownEvent, KeyboardEvent);
+
+            this.WhenActivated(d => d(ViewModel.ShowFolderDialog.RegisterHandler(WindowShowFolderDialog)));
+            this.WhenActivated(d => d(ViewModel.ShowFileDialog.RegisterHandler(WindowShowFileDialog)));
         }
 
         private void ZoomButton_Click(object? sender, RoutedEventArgs e)
@@ -50,7 +55,7 @@ namespace RetroImage.Views
             var button = sender as Button;
 
             if ((button.Name == PrevImageButton.Name || button.Name == NextImageButton.Name)
-                && ViewModel.ImagePaths.Length == 1) return;
+                && ViewModel.ImagePaths.Length < 2) return;
 
             bool mouseEntered = args.RoutedEvent.Name == "PointerEnter";
             button.Opacity = mouseEntered ? 1 : 0;
@@ -86,6 +91,33 @@ namespace RetroImage.Views
             {
                 ViewModel.SetImagePaths(e.Data.GetFileNames());
             }
+        }
+
+        private async Task WindowShowFolderDialog(InteractionContext<string, string?> interaction)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Directory = !string.IsNullOrEmpty(interaction?.Input) ? interaction.Input : AppDomain.CurrentDomain.BaseDirectory
+            };
+
+            var folderPath = await dialog.ShowAsync(this);
+            interaction?.SetOutput(folderPath);
+        }
+
+        private async Task WindowShowFileDialog(InteractionContext<string, string[]> interaction)
+        {
+            var dialog = new OpenFileDialog();
+
+            dialog.AllowMultiple = true;
+
+            if (!string.IsNullOrEmpty(interaction?.Input))
+                dialog.Directory = Path.GetFullPath(interaction.Input);
+
+            else
+                dialog.Directory = Constants.DefaultPath;
+
+            var filePaths = await dialog.ShowAsync(this);
+            interaction?.SetOutput(filePaths);
         }
     }
 }

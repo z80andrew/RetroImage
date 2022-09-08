@@ -117,7 +117,7 @@ namespace Z80andrew.RetroImage.Services
                 if (height == 200)
                 {
                     resolution = Resolution.MED;
-                    renderHeight*=2;
+                    renderHeight *= 2;
                 }
                 else if (height == 400) resolution = Resolution.HIGH;
             }
